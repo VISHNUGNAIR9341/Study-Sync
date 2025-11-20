@@ -34,6 +34,25 @@ app.get('/api/test', (req, res) => {
     res.json({ message: 'Test route working' });
 });
 
+// Add basic global error handlers to capture why the process might terminate.
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+    // keep process alive briefly to flush logs, then exit with failure
+    setTimeout(() => process.exit(1), 100);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    setTimeout(() => process.exit(1), 100);
+});
+
+// If the PG pool emits an error it can crash the app; listen on process warnings.
+process.on('warning', (warning) => {
+    console.warn('Process warning:', warning && warning.stack ? warning.stack : warning);
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+console.log('Server setup complete. Awaiting connections...');
