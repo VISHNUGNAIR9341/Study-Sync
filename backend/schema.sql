@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    points INT DEFAULT 0,
+    streak INT DEFAULT 0,
     routine_config JSONB DEFAULT '{}',
     ml_profile JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -51,8 +51,17 @@ process.on('warning', (warning) => {
     console.warn('Process warning:', warning && warning.stack ? warning.stack : warning);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+server.on('close', () => {
+    console.log('Server closed!');
+});
+
+// Force keep-alive to debug why process is exiting
+setInterval(() => {
+    // console.log('Heartbeat - Process is still alive');
+}, 10000);
 
 console.log('Server setup complete. Awaiting connections...');
