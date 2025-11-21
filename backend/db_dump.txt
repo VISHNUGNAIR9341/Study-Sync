@@ -1,0 +1,135 @@
+[dotenv@17.2.3] injecting env (1) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+--- Table: users ---
+Count: 1
+Data: [
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Student",
+    "points": 20,
+    "streak": 0,
+    "routine_config": {},
+    "ml_profile": {},
+    "created_at": "2025-11-21T05:32:11.994Z"
+  }
+]
+
+--- Table: tasks ---
+Count: 4
+Data: [
+  {
+    "id": "ee8fcb9a-de3f-4142-a8ea-79daad1b9bf9",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "essay",
+    "category": "writing",
+    "estimated_size": 1,
+    "default_expected_time": 30,
+    "ml_predicted_time": 18,
+    "priority": "Medium",
+    "deadline": null,
+    "status": "Completed",
+    "created_at": "2025-11-21T05:36:34.734Z"
+  },
+  {
+    "id": "c8a5c9bc-a1b6-4513-aa64-ba4cc20720aa",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Essay",
+    "category": "writing",
+    "estimated_size": 1,
+    "default_expected_time": 30,
+    "ml_predicted_time": 18,
+    "priority": "Medium",
+    "deadline": "2025-11-22T07:27:00.000Z",
+    "status": "Completed",
+    "created_at": "2025-11-21T07:27:34.936Z"
+  },
+  {
+    "id": "096ec83a-20dc-48a1-9bec-4bdcfdf4dcca",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "History",
+    "category": "revision",
+    "estimated_size": 1,
+    "default_expected_time": 30,
+    "ml_predicted_time": 9,
+    "priority": "High",
+    "deadline": null,
+    "status": "Pending",
+    "created_at": "2025-11-21T09:02:25.721Z"
+  },
+  {
+    "id": "06c534fa-8f34-4ad3-b853-2064d23e2f28",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Exam",
+    "category": "reading",
+    "estimated_size": 1,
+    "default_expected_time": 30,
+    "ml_predicted_time": 4,
+    "priority": "Medium",
+    "deadline": "2025-11-30T09:04:00.000Z",
+    "status": "Pending",
+    "created_at": "2025-11-21T09:04:25.649Z"
+  }
+]
+
+--- Table: sessions ---
+Count: 0
+No data.
+
+--- Table: routine_blocks ---
+Count: 3
+Data: [
+  {
+    "id": "f2514d5f-1538-47dd-ad79-b715d37f17c7",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "activity_type": "school",
+    "start_time": "09:00:00",
+    "end_time": "17:00:00",
+    "days": null,
+    "created_at": "2025-11-21T09:02:45.552Z"
+  },
+  {
+    "id": "9304bc40-5fa9-4ea7-9586-837adf450237",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "activity_type": "dinner",
+    "start_time": "21:00:00",
+    "end_time": "22:00:00",
+    "days": null,
+    "created_at": "2025-11-21T09:03:08.611Z"
+  },
+  {
+    "id": "0541b6a5-cd82-41fe-8f40-013c1a14500a",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "activity_type": "play",
+    "start_time": "18:00:00",
+    "end_time": "19:00:00",
+    "days": null,
+    "created_at": "2025-11-21T09:03:50.159Z"
+  }
+]
+
+--- Table: task_history ---
+Count: 2
+Data: [
+  {
+    "id": "8b015418-fd28-4104-bd1e-06989de10374",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "task_id": "ee8fcb9a-de3f-4142-a8ea-79daad1b9bf9",
+    "title": "essay",
+    "category": "writing",
+    "priority": "Medium",
+    "status": "Completed",
+    "completed_at": "2025-11-21T05:36:39.863Z",
+    "created_at": "2025-11-21T05:36:39.863Z"
+  },
+  {
+    "id": "079fd633-b0bb-44de-9687-e8eb6b78e2eb",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "task_id": "c8a5c9bc-a1b6-4513-aa64-ba4cc20720aa",
+    "title": "Essay",
+    "category": "writing",
+    "priority": "Medium",
+    "status": "Completed",
+    "completed_at": "2025-11-21T07:27:59.731Z",
+    "created_at": "2025-11-21T07:27:59.731Z"
+  }
+]
