@@ -61,7 +61,7 @@ async function setupDatabase() {
             const userRes = await dbClient.query("SELECT * FROM users WHERE id = $1", [FIXED_ID]);
             if (userRes.rows.length === 0) {
                 await dbClient.query(
-                    "INSERT INTO users (id, name) VALUES ($1, 'Student')",
+                    "INSERT INTO users (id, name, points, streak) VALUES ($1, 'Student', 0, 0)",
                     [FIXED_ID]
                 );
                 console.log('Default user created.');

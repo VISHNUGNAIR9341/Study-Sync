@@ -36,7 +36,7 @@ const Login = ({ setUserId }) => {
         // I will just use a random UUID for now if I can't find one? No, FK constraints.
         // I will update the seed script to use a specific UUID so I can hardcode it here.
 
-        setUserId('123e4567-e89b-12d3-a456-426614174000'); // I will update seed to use this.
+        setUserId('123e4567-e89b-12d3-a456-426614174000'); // Fixed UUID from seed script
         navigate('/');
     };
 
