@@ -15,7 +15,7 @@ import WellnessDashboard from '../components/WellnessDashboard';
 import BackupManager from '../components/BackupManager';
 import DatabaseViewer from '../components/DatabaseViewer';
 
-const Dashboard = ({ userId }) => {
+const Dashboard = ({ userId, onLogout }) => {
     const [tasks, setTasks] = useState([]);
     const [schedule, setSchedule] = useState([]);
     const [activeTab, setActiveTab] = useState('tasks');
@@ -128,6 +128,13 @@ const Dashboard = ({ userId }) => {
                             className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-8 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-110 font-bold"
                         >
                             <Plus size={22} className="animate-spin" /> New Task
+                        </button>
+                        <button
+                            onClick={onLogout}
+                            className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all font-medium"
+                            title="Logout"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                         </button>
                     </div>
                 </header>

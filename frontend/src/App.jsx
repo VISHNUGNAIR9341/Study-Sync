@@ -26,7 +26,7 @@ function App() {
             />
             <Route
               path="/"
-              element={userId ? <Dashboard userId={userId} /> : <Navigate to="/login" />}
+              element={userId ? <Dashboard userId={userId} onLogout={() => setUserId(null)} /> : <Navigate to="/login" />}
             />
           </Routes>
         </div>

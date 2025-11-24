@@ -1,5 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id TEXT UNIQUE,
+    password TEXT,
     name TEXT NOT NULL,
     points INT DEFAULT 0,
     streak INT DEFAULT 0,
