@@ -48,9 +48,7 @@ const HabitTracker = () => {
     };
 
     const deleteHabit = (habitId) => {
-        if (window.confirm('Delete this habit?')) {
-            saveHabits(habits.filter(h => h.id !== habitId));
-        }
+        saveHabits(habits.filter(h => h.id !== habitId));
     };
 
     const getStreak = (completions) => {
@@ -138,8 +136,8 @@ const HabitTracker = () => {
                                     <button
                                         onClick={() => toggleCompletion(habit.id)}
                                         className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${completedToday
-                                                ? 'bg-green-500 border-green-500 text-white'
-                                                : 'border-gray-300 hover:border-green-500'
+                                            ? 'bg-green-500 border-green-500 text-white'
+                                            : 'border-gray-300 hover:border-green-500'
                                             }`}
                                     >
                                         {completedToday && '✓'}

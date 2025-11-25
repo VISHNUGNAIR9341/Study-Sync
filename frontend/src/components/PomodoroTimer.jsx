@@ -15,7 +15,7 @@ const PomodoroTimer = () => {
                     if (minutes === 0) {
                         setIsActive(false);
                         // Play sound or notification here
-                        alert("Time's up!");
+                        // alert("Time's up!");
                     } else {
                         setMinutes(minutes - 1);
                         setSeconds(59);

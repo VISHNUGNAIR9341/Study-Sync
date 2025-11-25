@@ -29,9 +29,7 @@ const ExamMode = () => {
     };
 
     const deleteExam = (examId) => {
-        if (window.confirm('Delete this exam?')) {
-            saveExams(exams.filter(e => e.id !== examId));
-        }
+        saveExams(exams.filter(e => e.id !== examId));
     };
 
     const getDaysUntil = (examDate) => {
@@ -132,8 +130,8 @@ const ExamMode = () => {
                                     <div className="flex items-center gap-2 mb-2">
                                         <h3 className="font-bold text-gray-800">{exam.subject}</h3>
                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${exam.weightage === 'Critical' ? 'bg-red-100 text-red-700' :
-                                                exam.weightage === 'High' ? 'bg-orange-100 text-orange-700' :
-                                                    'bg-blue-100 text-blue-700'
+                                            exam.weightage === 'High' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-blue-100 text-blue-700'
                                             }`}>
                                             {exam.weightage}
                                         </span>
