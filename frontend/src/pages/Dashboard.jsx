@@ -133,11 +133,14 @@ const Dashboard = ({ userId, onLogout }) => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-200">
             <div className="max-w-7xl mx-auto">
                 <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <div className="relative">
-                        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 animate-pulse">
-                            StudySync
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 mt-2 font-medium">Sync your success, one task at a time!</p>
+                    <div className="flex items-center gap-4">
+                        <img src="/logo.png" alt="StudySync Logo" className="w-24 h-24 object-contain" />
+                        <div>
+                            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500">
+                                StudySync
+                            </h1>
+                            <p className="text-gray-600 dark:text-gray-300 mt-1 font-medium">Master your schedule, maximize your potential.</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">
