@@ -33,10 +33,6 @@ const BackupManager = ({ userId }) => {
     };
 
     const handleRestoreBackup = (backupKey) => {
-        if (!window.confirm('Are you sure you want to restore this backup? Current data will be overwritten.')) {
-            return;
-        }
-
         const success = storageManager.restoreBackup(backupKey);
         if (success) {
             showMessage('success', 'Backup restored successfully! Refreshing page...');
@@ -64,12 +60,8 @@ const BackupManager = ({ userId }) => {
             try {
                 const importData = JSON.parse(e.target.result);
 
-                if (!window.confirm('Import this backup? You can choose to merge with existing data or replace it.')) {
-                    return;
-                }
-
-                const merge = window.confirm('Click OK to merge with existing data, or Cancel to replace all data.');
-                const success = storageManager.importData(importData, merge);
+                // Default to merge for safety without confirmation
+                const success = storageManager.importData(importData, true);
 
                 if (success) {
                     showMessage('success', 'Data imported successfully! Refreshing page...');

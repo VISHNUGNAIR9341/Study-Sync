@@ -6,8 +6,6 @@ import PomodoroTimer from '../components/PomodoroTimer';
 import RoutineBuilder from '../components/RoutineBuilder';
 import HabitTracker from '../components/HabitTracker';
 import ExamMode from '../components/ExamMode';
-import MoodTracker from '../components/MoodTracker';
-import FocusMusicPlayer from '../components/FocusMusicPlayer';
 import DarkModeToggle from '../components/DarkModeToggle';
 import SmartReminders from '../components/SmartReminders';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
@@ -261,14 +259,8 @@ const Dashboard = ({ userId, onLogout }) => {
                     <RoutineBuilder userId={userId} />
                 ) : activeTab === 'wellness' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="space-y-6">
-                            <WellnessDashboard />
-                            <MoodTracker />
-                        </div>
-                        <div className="space-y-6">
-                            <HabitTracker />
-                            <FocusMusicPlayer />
-                        </div>
+                        <WellnessDashboard />
+                        <HabitTracker />
                     </div>
                 ) : activeTab === 'exams' ? (
                     <ExamMode />
