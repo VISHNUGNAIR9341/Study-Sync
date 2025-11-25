@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Calendar, Clock, TrendingUp, Award, Search, Filter } from 'lucide-react';
+import { User, Calendar, Clock, TrendingUp, Award, Search, Filter, Trash2 } from 'lucide-react';
 import AnalyticsDashboard from './AnalyticsDashboard';
-import { fetchTaskHistory as apiFetchTaskHistory, fetchUser } from '../api';
+import { fetchTaskHistory as apiFetchTaskHistory, fetchUser, deleteTaskFromHistory } from '../api';
 
 const UserProfile = ({ userId, tasks }) => {
     const [taskHistory, setTaskHistory] = useState([]);
@@ -10,24 +10,34 @@ const UserProfile = ({ userId, tasks }) => {
     const [filterCategory, setFilterCategory] = useState('all');
     const [loading, setLoading] = useState(true);
 
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [historyData, userData] = await Promise.all([
+                apiFetchTaskHistory(userId),
+                fetchUser(userId)
+            ]);
+            setTaskHistory(historyData || []);
+            setUser(userData);
+        } catch (error) {
+            console.error('Error fetching profile data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const [historyData, userData] = await Promise.all([
-                    apiFetchTaskHistory(userId),
-                    fetchUser(userId)
-                ]);
-                setTaskHistory(historyData || []);
-                setUser(userData);
-            } catch (error) {
-                console.error('Error fetching profile data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadData();
     }, [userId]);
+
+    const handleDeleteTask = async (taskId) => {
+        try {
+            await deleteTaskFromHistory(taskId);
+            await loadData(); // Refresh the task history
+        } catch (error) {
+            console.error('Error deleting task:', error);
+        }
+    };
 
     // Calculate user statistics
     const completedTasks = tasks.filter(t => t.status === 'Completed');
@@ -166,16 +176,25 @@ const UserProfile = ({ userId, tasks }) => {
                                 filteredHistory.map((task, index) => (
                                     <div
                                         key={task.id || index}
-                                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all"
+                                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all group"
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="font-semibold text-gray-800 dark:text-gray-100">{task.title}</h3>
-                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${task.priority === 'Urgent' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200' :
-                                                task.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' :
-                                                    'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                                                }`}>
-                                                {task.priority}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${task.priority === 'Urgent' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200' :
+                                                    task.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' :
+                                                        'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                                                    }`}>
+                                                    {task.priority}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleDeleteTask(task.id)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
+                                                    title="Delete task"
+                                                >
+                                                    <Trash2 size={16} className="text-red-500 dark:text-red-400" />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                                             <span className="capitalize">{task.category?.replace('_', ' ')}</span>

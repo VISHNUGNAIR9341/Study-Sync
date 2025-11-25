@@ -51,7 +51,7 @@ const Login = ({ setUserId }) => {
             <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                 <div className="p-8">
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-slate-800 mb-2">
+                        <h1 className="text-4xl font-bold text-slate-800 mb-2 font-display tracking-wide">
                             StudySync
                         </h1>
                         <p className="text-slate-500 font-medium">

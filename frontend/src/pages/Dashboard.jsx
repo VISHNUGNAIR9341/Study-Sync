@@ -133,13 +133,13 @@ const Dashboard = ({ userId, onLogout }) => {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 transition-colors duration-200 font-sans">
             <div className="max-w-7xl mx-auto">
                 <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <div className="flex items-center gap-4">
-                        <img src="/logo.png" alt="StudySync Logo" className="w-24 h-24 object-contain" />
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.svg" alt="StudySync Logo" className="w-14 h-14 object-contain" />
                         <div>
-                            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+                            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 font-display tracking-wide">
                                 StudySync
                             </h1>
-                            <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Master your schedule, maximize your potential.</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Master your schedule, maximize your potential.</p>
                         </div>
                     </div>
 
