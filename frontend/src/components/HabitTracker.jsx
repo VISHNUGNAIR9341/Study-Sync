@@ -48,9 +48,7 @@ const HabitTracker = () => {
     };
 
     const deleteHabit = (habitId) => {
-        if (window.confirm('Delete this habit?')) {
-            saveHabits(habits.filter(h => h.id !== habitId));
-        }
+        saveHabits(habits.filter(h => h.id !== habitId));
     };
 
     const getStreak = (completions) => {
@@ -77,14 +75,14 @@ const HabitTracker = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-                    <Target className="text-green-500" /> Habit Tracker
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
+                    <Target className="text-emerald-500" /> Habit Tracker
                 </h2>
                 <button
                     onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all"
+                    className="flex items-center gap-2 bg-emerald-200 text-emerald-900 px-4 py-2 rounded-lg hover:bg-emerald-300 transition-all font-medium"
                 >
                     <Plus size={18} /> Add Habit
                 </button>
@@ -133,13 +131,13 @@ const HabitTracker = () => {
                         const streak = getStreak(habit.completions);
                         const completedToday = isCompletedToday(habit.completions);
                         return (
-                            <div key={habit.id} className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-green-50 to-emerald-50 hover:shadow-md transition-all">
+                            <div key={habit.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-emerald-50/50 hover:shadow-md transition-all">
                                 <div className="flex items-center gap-4 flex-1">
                                     <button
                                         onClick={() => toggleCompletion(habit.id)}
                                         className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${completedToday
-                                                ? 'bg-green-500 border-green-500 text-white'
-                                                : 'border-gray-300 hover:border-green-500'
+                                            ? 'bg-green-500 border-green-500 text-white'
+                                            : 'border-gray-300 hover:border-green-500'
                                             }`}
                                     >
                                         {completedToday && '✓'}

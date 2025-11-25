@@ -56,7 +56,6 @@ const RoutineBuilder = ({ userId }) => {
     };
 
     const handleDeleteBlock = async (blockId) => {
-        if (!window.confirm('Remove this activity from your routine?')) return;
         setLoading(true);
         try {
             await deleteRoutineBlock(blockId);
@@ -72,15 +71,25 @@ const RoutineBuilder = ({ userId }) => {
         return ACTIVITY_TYPES.find(a => a.value === type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
     };
 
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours, 10);
+        const m = parseInt(minutes, 10);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+    };
+
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
                     <Clock className="text-indigo-500" /> Daily Routine
                 </h2>
                 <button
                     onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="flex items-center gap-2 bg-indigo-200 text-indigo-900 px-4 py-2 rounded-lg hover:bg-indigo-300 transition-colors font-medium"
                 >
                     <Plus size={18} /> Add Activity
                 </button>
@@ -133,7 +142,7 @@ const RoutineBuilder = ({ userId }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                            className="px-4 py-2 bg-indigo-200 text-indigo-900 rounded-lg hover:bg-indigo-300 transition-colors disabled:opacity-50 font-medium"
                         >
                             {loading ? 'Adding...' : 'Add Activity'}
                         </button>
@@ -163,7 +172,7 @@ const RoutineBuilder = ({ userId }) => {
                                     <div>
                                         <h3 className="font-semibold">{config.label}</h3>
                                         <p className="text-sm opacity-75">
-                                            {block.start_time} - {block.end_time}
+                                            {formatTime(block.start_time)} - {formatTime(block.end_time)}
                                         </p>
                                     </div>
                                 </div>

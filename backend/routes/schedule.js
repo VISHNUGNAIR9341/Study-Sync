@@ -27,14 +27,31 @@ router.post('/generate', async (req, res) => {
             title: t.title,
             category: t.category,
             estimated_size: t.estimated_size,
-            predicted_time: t.ml_predicted_time || t.default_expected_time,
+            predicted_time: t.manual_time || t.ml_predicted_time || t.default_expected_time,
             deadline: t.deadline,
-            priority: t.priority
+            priority: t.priority,
+            complexity: t.complexity || 'Medium',
+            progress: t.progress || 0
         }));
 
-        // 4. Call ML Service to Schedule (with routine_blocks)
-        console.log('Calling ML service with:', { userId, tasksCount: tasks.length, routineBlocksCount: routine_blocks.length });
-        const schedule = await mlClient.generateSchedule(userId, routine, tasks, routine_blocks);
+        // 4. Fetch Completed Sessions for Today
+        const todaySessionsRes = await db.query(
+            `SELECT task_id, SUM(duration_minutes) as total_minutes 
+             FROM sessions 
+             WHERE user_id = $1 
+             AND start_time >= CURRENT_DATE 
+             GROUP BY task_id`,
+            [userId]
+        );
+
+        const completed_today = {};
+        todaySessionsRes.rows.forEach(row => {
+            completed_today[row.task_id] = parseInt(row.total_minutes);
+        });
+
+        // 5. Call ML Service to Schedule (with routine_blocks and completed_today)
+        console.log('Calling ML service with:', { userId, tasksCount: tasks.length, routineBlocksCount: routine_blocks.length, completedTodayCount: Object.keys(completed_today).length });
+        const schedule = await mlClient.generateSchedule(userId, routine, tasks, routine_blocks, completed_today);
         console.log('ML Service returned schedule:', schedule);
 
         res.json(schedule);

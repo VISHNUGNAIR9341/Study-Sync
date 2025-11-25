@@ -22,6 +22,11 @@ export const fetchTasks = async (userId) => {
     return response.data;
 };
 
+export const fetchTaskDetails = async (taskId) => {
+    const response = await axios.get(`${API_BASE}/tasks/details/${taskId}`);
+    return response.data;
+};
+
 export const createTask = async (task) => {
     const response = await axios.post(`${API_BASE}/tasks`, task);
     return response.data;
@@ -29,6 +34,11 @@ export const createTask = async (task) => {
 
 export const updateTaskStatus = async (taskId, status) => {
     const response = await axios.put(`${API_BASE}/tasks/${taskId}/status`, { status });
+    return response.data;
+};
+
+export const updateTaskProgress = async (taskId, duration) => {
+    const response = await axios.post(`${API_BASE}/tasks/${taskId}/progress`, { duration });
     return response.data;
 };
 
@@ -44,6 +54,16 @@ export const deleteTask = async (taskId) => {
 
 export const fetchUser = async (userId) => {
     const response = await axios.get(`${API_BASE}/user/${userId}`);
+    return response.data;
+};
+
+export const fetchTaskHistory = async (userId) => {
+    const response = await axios.get(`${API_BASE}/history/${userId}`);
+    return response.data;
+};
+
+export const deleteTaskFromHistory = async (taskId) => {
+    const response = await axios.delete(`${API_BASE}/history/${taskId}`);
     return response.data;
 };
 
