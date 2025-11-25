@@ -37,9 +37,14 @@ function runPythonScript(scriptName, data) {
     });
 }
 
-async function predictTime(category, size, userId) {
+async function predictTime(category, size, userId, extraFeatures = {}) {
     try {
-        const output = await runPythonScript('predict.py', { category, size, user_id: userId });
+        const output = await runPythonScript('predict.py', {
+            category,
+            size,
+            user_id: userId,
+            ...extraFeatures
+        });
         return output.predicted_time;
     } catch (err) {
         console.error('ML Prediction Error:', err.message);

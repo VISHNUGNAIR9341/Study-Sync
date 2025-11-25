@@ -27,13 +27,17 @@ router.post('/generate', async (req, res) => {
             title: t.title,
             category: t.category,
             estimated_size: t.estimated_size,
-            predicted_time: t.ml_predicted_time || t.default_expected_time,
+            predicted_time: t.manual_time || t.ml_predicted_time || t.default_expected_time,
             deadline: t.deadline,
-            priority: t.priority
+            priority: t.priority,
+            complexity: t.complexity || 'Medium'
         }));
 
         // 4. Call ML Service to Schedule (with routine_blocks)
         console.log('Calling ML service with:', { userId, tasksCount: tasks.length, routineBlocksCount: routine_blocks.length });
+        if (routine_blocks.length > 0) {
+            console.log('Routine Blocks:', JSON.stringify(routine_blocks));
+        }
         const schedule = await mlClient.generateSchedule(userId, routine, tasks, routine_blocks);
         console.log('ML Service returned schedule:', schedule);
 

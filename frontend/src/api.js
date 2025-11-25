@@ -22,6 +22,11 @@ export const fetchTasks = async (userId) => {
     return response.data;
 };
 
+export const fetchTaskDetails = async (taskId) => {
+    const response = await axios.get(`${API_BASE}/tasks/details/${taskId}`);
+    return response.data;
+};
+
 export const createTask = async (task) => {
     const response = await axios.post(`${API_BASE}/tasks`, task);
     return response.data;
@@ -44,6 +49,11 @@ export const deleteTask = async (taskId) => {
 
 export const fetchUser = async (userId) => {
     const response = await axios.get(`${API_BASE}/user/${userId}`);
+    return response.data;
+};
+
+export const fetchTaskHistory = async (userId) => {
+    const response = await axios.get(`${API_BASE}/history/${userId}`);
     return response.data;
 };
 

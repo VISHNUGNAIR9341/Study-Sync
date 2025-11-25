@@ -1,30 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { User, Calendar, Clock, TrendingUp, Award, Search, Filter } from 'lucide-react';
 import AnalyticsDashboard from './AnalyticsDashboard';
-import axios from 'axios';
+import { fetchTaskHistory as apiFetchTaskHistory, fetchUser } from '../api';
 
 const UserProfile = ({ userId, tasks }) => {
     const [taskHistory, setTaskHistory] = useState([]);
+    const [user, setUser] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchTaskHistory();
-    }, [userId]);
-
-    const fetchTaskHistory = async () => {
-        try {
+        const loadData = async () => {
             setLoading(true);
-            const response = await axios.get(`http://localhost:5000/api/history/${userId}`);
-            setTaskHistory(response.data || []);
-        } catch (error) {
-            console.error('Error fetching task history:', error);
-            setTaskHistory([]);
-        } finally {
-            setLoading(false);
-        }
-    };
+            try {
+                const [historyData, userData] = await Promise.all([
+                    apiFetchTaskHistory(userId),
+                    fetchUser(userId)
+                ]);
+                setTaskHistory(historyData || []);
+                setUser(userData);
+            } catch (error) {
+                console.error('Error fetching profile data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [userId]);
 
     // Calculate user statistics
     const completedTasks = tasks.filter(t => t.status === 'Completed');
@@ -42,6 +45,26 @@ const UserProfile = ({ userId, tasks }) => {
 
     return (
         <div className="space-y-6">
+            {/* User Details Card */}
+            {user && (
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-6">
+                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                        {user.name ? user.name.charAt(0).toUpperCase() : <User />}
+                    </div>
+                    <div>
+                        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{user.name}</h2>
+                        <div className="flex items-center gap-4 mt-2 text-gray-600 dark:text-gray-400">
+                            <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-sm">
+                                <User size={14} /> ID: {user.student_id}
+                            </span>
+                            <span className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-medium">
+                                <Award size={14} /> {user.points} Points
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* User Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 p-4 rounded-xl">
@@ -148,8 +171,8 @@ const UserProfile = ({ userId, tasks }) => {
                                         <div className="flex justify-between items-start mb-2">
                                             <h3 className="font-semibold text-gray-800 dark:text-gray-100">{task.title}</h3>
                                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${task.priority === 'Urgent' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200' :
-                                                    task.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' :
-                                                        'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                                                task.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' :
+                                                    'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                                                 }`}>
                                                 {task.priority}
                                             </span>
@@ -167,7 +190,7 @@ const UserProfile = ({ userId, tasks }) => {
                                             </span>
                                             <span>•</span>
                                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${task.status === 'Completed' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' :
-                                                    'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                                                'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
                                                 }`}>
                                                 {task.status}
                                             </span>

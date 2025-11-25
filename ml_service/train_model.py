@@ -18,7 +18,7 @@ def train_model():
     print("\nPreparing features...")
     
     # One-hot encode categorical variables
-    df_encoded = pd.get_dummies(df, columns=['category', 'priority', 'time_of_day', 'day_of_week'])
+    df_encoded = pd.get_dummies(df, columns=['category', 'priority', 'time_of_day', 'day_of_week', 'complexity'])
     
     # Separate features and target
     X = df_encoded.drop('actual_time_minutes', axis=1)

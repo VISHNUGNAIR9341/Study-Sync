@@ -55,7 +55,10 @@ def predict():
         input_df = pd.DataFrame([{
             'estimated_size': size,
             'title_length': int(data.get('title_length', 25)),
-            'user_experience_level': int(data.get('user_experience', 3))
+            'user_experience_level': int(data.get('user_experience', 3)),
+            'num_pages': int(data.get('num_pages', 0) or 0),
+            'num_slides': int(data.get('num_slides', 0) or 0),
+            'num_questions': int(data.get('num_questions', 0) or 0)
         }])
         
         # Add category one-hot encoding
@@ -66,6 +69,11 @@ def predict():
         priority = data.get('priority', 'Medium')
         for pri in ['Low', 'Medium', 'High', 'Urgent']:
             input_df[f'priority_{pri}'] = 1 if priority == pri else 0
+
+        # Add complexity one-hot encoding (default to Medium)
+        complexity = data.get('complexity', 'Medium')
+        for comp in ['Low', 'Medium', 'High']:
+            input_df[f'complexity_{comp}'] = 1 if complexity == comp else 0
         
         # Add time_of_day one-hot encoding (default to morning)
         time_of_day = data.get('time_of_day', 'morning')

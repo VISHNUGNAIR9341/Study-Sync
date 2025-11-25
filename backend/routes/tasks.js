@@ -3,6 +3,20 @@ const router = express.Router();
 const db = require('../db');
 const mlClient = require('../ml_client');
 
+// Get single task details
+router.get('/details/:taskId', async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const result = await db.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Get all tasks for a user
 router.get('/:userId', async (req, res) => {
     try {
@@ -17,17 +31,24 @@ router.get('/:userId', async (req, res) => {
 // Create a new task
 router.post('/', async (req, res) => {
     try {
-        let { user_id, title, category, estimated_size, default_expected_time, priority, deadline } = req.body;
-        // Convert empty deadline to null for PostgreSQL
-        if (deadline === '' || deadline === undefined) {
-            deadline = null;
+        let { user_id, title, category, estimated_size, default_expected_time, priority, deadline, complexity, num_pages, num_slides, num_questions } = req.body;
+
+        if (!deadline) {
+            return res.status(400).json({ error: 'Deadline is required' });
         }
-        console.log('Creating task:', { user_id, title, category, estimated_size, default_expected_time, priority, deadline });
+
+        console.log('Creating task:', { user_id, title, category, estimated_size, default_expected_time, priority, deadline, complexity });
 
         // Call ML service to get predicted time (with fallback)
         let ml_predicted_time = default_expected_time;
         try {
-            const predicted = await mlClient.predictTime(category, estimated_size, user_id);
+            // Pass the new features to the prediction service
+            const predicted = await mlClient.predictTime(category, estimated_size, user_id, {
+                complexity,
+                num_pages,
+                num_slides,
+                num_questions
+            });
             if (predicted) {
                 ml_predicted_time = predicted;
             }
@@ -37,9 +58,9 @@ router.post('/', async (req, res) => {
 
         console.log('Inserting task with ml_predicted_time:', ml_predicted_time);
         const result = await db.query(
-            `INSERT INTO tasks (user_id, title, category, estimated_size, default_expected_time, ml_predicted_time, priority, deadline)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [user_id, title, category, estimated_size, default_expected_time, ml_predicted_time, priority, deadline]
+            `INSERT INTO tasks (user_id, title, category, estimated_size, default_expected_time, ml_predicted_time, priority, deadline, complexity, num_pages, num_slides, num_questions, manual_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+            [user_id, title, category, estimated_size, default_expected_time, ml_predicted_time, priority, deadline, complexity, num_pages, num_slides, num_questions, req.body.manual_time || null]
         );
         console.log('Task created successfully:', result.rows[0].id);
         res.status(201).json(result.rows[0]);

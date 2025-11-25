@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Upload, Save, RotateCcw, Database, CheckCircle, AlertCircle } from 'lucide-react';
 import storageManager from '../utils/storageManager';
 
-const BackupManager = () => {
+const BackupManager = ({ userId }) => {
     const [backups, setBackups] = useState([]);
     const [message, setMessage] = useState(null);
     const [autoBackup, setAutoBackup] = useState(true);
@@ -11,9 +11,11 @@ const BackupManager = () => {
         loadBackups();
 
         // Load auto-backup setting
-        const savedAutoBackup = storageManager.get('autoBackupEnabled', true);
-        setAutoBackup(savedAutoBackup);
-    }, []);
+        if (userId) {
+            const savedAutoBackup = storageManager.get(`autoBackupEnabled_${userId}`, true);
+            setAutoBackup(savedAutoBackup);
+        }
+    }, [userId]);
 
     const loadBackups = () => {
         const allBackups = storageManager.getAllBackups();
@@ -86,7 +88,9 @@ const BackupManager = () => {
     const toggleAutoBackup = () => {
         const newValue = !autoBackup;
         setAutoBackup(newValue);
-        storageManager.set('autoBackupEnabled', newValue);
+        if (userId) {
+            storageManager.set(`autoBackupEnabled_${userId}`, newValue);
+        }
 
         if (newValue) {
             handleCreateBackup();

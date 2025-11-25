@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser } from '../api';
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Loader2, Trash2, Trophy, Flame, CalendarClock } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
@@ -25,7 +26,8 @@ const Dashboard = ({ userId, onLogout }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [newTask, setNewTask] = useState({
-        title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: ''
+        title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
+        complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
     });
 
     const loadData = async () => {
@@ -54,9 +56,18 @@ const Dashboard = ({ userId, onLogout }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await createTask({ ...newTask, user_id: userId });
+            // Clean up empty fields before sending
+            const taskPayload = { ...newTask, user_id: userId };
+            if (!taskPayload.num_pages) delete taskPayload.num_pages;
+            if (!taskPayload.num_slides) delete taskPayload.num_slides;
+            if (!taskPayload.num_questions) delete taskPayload.num_questions;
+
+            await createTask(taskPayload);
             setShowAddModal(false);
-            setNewTask({ title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '' });
+            setNewTask({
+                title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
+                complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+            });
             await loadData();
         } catch (err) {
             setError("Failed to add task.");
@@ -207,8 +218,8 @@ const Dashboard = ({ userId, onLogout }) => {
                     <UserProfile userId={userId} tasks={tasks} />
                 ) : activeTab === 'settings' ? (
                     <div className="space-y-6">
-                        <SmartReminders tasks={tasks} userStats={userStats} />
-                        <BackupManager />
+                        <SmartReminders tasks={tasks} userStats={userStats} userId={userId} />
+                        <BackupManager userId={userId} />
 
                         {/* Database Viewer */}
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -260,7 +271,9 @@ const Dashboard = ({ userId, onLogout }) => {
                                         {tasks.filter(t => t.status !== 'Completed').map(task => (
                                             <div key={task.id} className="group p-4 bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 rounded-xl shadow-sm hover:shadow-md transition-all">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{task.title}</h3>
+                                                    <Link to={`/task/${task.id}`} className="hover:underline">
+                                                        <h3 className="font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{task.title}</h3>
+                                                    </Link>
                                                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${task.priority === 'Urgent' ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200' :
                                                         task.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' :
                                                             'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
@@ -280,6 +293,13 @@ const Dashboard = ({ userId, onLogout }) => {
                                                                 Due: {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                             </p>
                                                         )}
+                                                        {/* Progress Bar */}
+                                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2 dark:bg-gray-600">
+                                                            <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${task.progress || 0}%` }}></div>
+                                                        </div>
+                                                        <Link to={`/task/${task.id}`} className="text-xs text-indigo-500 hover:text-indigo-700 mt-2 inline-block font-medium">
+                                                            View Schedule & Details &rarr;
+                                                        </Link>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button
@@ -373,7 +393,7 @@ const Dashboard = ({ userId, onLogout }) => {
 
                 {showAddModal && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl transform transition-all max-h-[90vh] overflow-y-auto">
                             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">Add New Task</h2>
                             <form onSubmit={handleAddTask} className="space-y-5">
                                 <div>
@@ -400,6 +420,7 @@ const Dashboard = ({ userId, onLogout }) => {
                                             <option value="problem_solving">Problems</option>
                                             <option value="project">Project</option>
                                             <option value="revision">Revision</option>
+                                            <option value="presentation">Presentation</option>
                                         </select>
                                     </div>
                                     <div>
@@ -418,15 +439,83 @@ const Dashboard = ({ userId, onLogout }) => {
                                 </div>
 
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Complexity</label>
+                                    <select
+                                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        value={newTask.complexity}
+                                        onChange={e => setNewTask({ ...newTask, complexity: e.target.value })}
+                                    >
+                                        <option>Low</option>
+                                        <option>Medium</option>
+                                        <option>High</option>
+                                    </select>
+                                </div>
+
+                                {/* Conditional Inputs based on Category */}
+                                {newTask.category === 'reading' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Number of Pages</label>
+                                        <input
+                                            type="number"
+                                            placeholder="e.g., 20"
+                                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            value={newTask.num_pages}
+                                            onChange={e => setNewTask({ ...newTask, num_pages: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+
+                                {(newTask.category === 'problem_solving' || newTask.category === 'revision') && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Number of Questions</label>
+                                        <input
+                                            type="number"
+                                            placeholder="e.g., 10"
+                                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            value={newTask.num_questions}
+                                            onChange={e => setNewTask({ ...newTask, num_questions: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+
+                                {newTask.category === 'presentation' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Number of Slides</label>
+                                        <input
+                                            type="number"
+                                            placeholder="e.g., 15"
+                                            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            value={newTask.num_slides}
+                                            onChange={e => setNewTask({ ...newTask, num_slides: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        <Clock size={16} className="inline mr-1" />
+                                        Manual Time Estimate (min) <span className="text-gray-400 text-xs">(Optional)</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder="e.g. 45"
+                                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        value={newTask.manual_time || ''}
+                                        onChange={e => setNewTask({ ...newTask, manual_time: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         <CalendarClock size={16} className="inline mr-1" />
-                                        Deadline (Optional)
+                                        Deadline
                                     </label>
                                     <input
                                         type="datetime-local"
                                         className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                                         value={newTask.deadline}
                                         onChange={e => setNewTask({ ...newTask, deadline: e.target.value })}
+                                        required
                                     />
                                 </div>
 

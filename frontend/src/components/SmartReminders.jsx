@@ -3,7 +3,7 @@ import { Bell, BellOff, Clock, CheckCircle, Flame, Calendar } from 'lucide-react
 import notificationManager from '../utils/notificationManager';
 import storageManager from '../utils/storageManager';
 
-const SmartReminders = ({ tasks = [], userStats = {} }) => {
+const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
     const [enabled, setEnabled] = useState(false);
     const [permission, setPermission] = useState('default');
     const [settings, setSettings] = useState({
@@ -16,11 +16,12 @@ const SmartReminders = ({ tasks = [], userStats = {} }) => {
 
     // Load settings from localStorage
     useEffect(() => {
-        const savedSettings = storageManager.get('reminderSettings', settings);
+        if (!userId) return;
+        const savedSettings = storageManager.get(`reminderSettings_${userId}`, settings);
         setSettings(savedSettings);
         setPermission(Notification.permission);
         setEnabled(Notification.permission === 'granted' && savedSettings.taskReminders);
-    }, []);
+    }, [userId]);
 
     // Request notification permission
     const handleEnableNotifications = async () => {
@@ -39,7 +40,9 @@ const SmartReminders = ({ tasks = [], userStats = {} }) => {
     const updateSetting = (key, value) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
-        storageManager.set('reminderSettings', newSettings);
+        if (userId) {
+            storageManager.set(`reminderSettings_${userId}`, newSettings);
+        }
     };
 
     // Schedule task reminders when tasks change

@@ -30,26 +30,46 @@ def get_free_slots(wake_up_str, sleep_str, routine_blocks):
     wake_minutes = time_to_minutes(wake_up)
     sleep_minutes = time_to_minutes(sleep)
     
-    # Create list of busy periods from routine blocks
-    busy_periods = []
+    # Preprocess routine blocks to handle midnight wrapping
+    processed_blocks = []
     for block in routine_blocks:
         start = time_to_minutes(parse_time(block['start_time']))
         end = time_to_minutes(parse_time(block['end_time']))
-        busy_periods.append((start, end))
+        
+        if end < start:
+            # Split into two blocks: start->midnight and midnight->end
+            processed_blocks.append((start, 24 * 60)) 
+            processed_blocks.append((0, end))         
+        else:
+            processed_blocks.append((start, end))
     
     # Sort busy periods by start time
-    busy_periods.sort()
+    processed_blocks.sort()
     
     # Find free slots
     free_slots = []
     current_time = wake_minutes
     
-    for busy_start, busy_end in busy_periods:
-        # If there's a gap before this busy period
+    for busy_start, busy_end in processed_blocks:
+        # If block ends before current time, skip it
+        if busy_end <= current_time:
+            continue
+            
+        # If block starts after current time, we have a gap
         if current_time < busy_start:
-            free_slots.append((current_time, busy_start))
-        # Move current time to end of busy period
+            # The gap ends at the start of the busy period, or sleep time, whichever is earlier
+            gap_end = min(busy_start, sleep_minutes)
+            
+            # Only add if it's a valid positive duration
+            if current_time < gap_end:
+                free_slots.append((current_time, gap_end))
+        
+        # Advance current time to end of busy period
         current_time = max(current_time, busy_end)
+        
+        # If we passed sleep time, stop
+        if current_time >= sleep_minutes:
+            break
     
     # Add remaining time after last busy period
     if current_time < sleep_minutes:
@@ -91,35 +111,77 @@ def schedule():
         # Schedule tasks in free slots
         for task in sorted_tasks:
             duration = task.get('predicted_time', 30)
+            complexity = task.get('complexity', 'Medium')
             task_scheduled = False
             
-            # Try to fit task in available free slots
+            best_slot_index = -1
+            best_slot_score = -float('inf')
+            
+            # Evaluate all available free slots
             for i, (slot_start, slot_end) in enumerate(free_slots):
                 slot_duration = slot_end - slot_start
                 
                 # Check if task fits in this slot (with 10 min buffer)
                 if slot_duration >= duration + 10:
-                    # Schedule the task
-                    task_start_minutes = slot_start
-                    task_end_minutes = slot_start + duration
+                    # Calculate score for this slot
+                    score = 0
                     
-                    schedule_list.append({
-                        "task_id": task.get('id'),
-                        "title": task.get('title'),
-                        "start": minutes_to_time(task_start_minutes),
-                        "end": minutes_to_time(task_end_minutes),
-                        "duration": duration
-                    })
+                    # 1. Time of Day Preference
+                    # Morning (06:00 - 12:00): High Energy -> Good for High Complexity / Urgent
+                    # Afternoon (12:00 - 17:00): Medium Energy -> Good for Medium Complexity
+                    # Evening (17:00 - 22:00): Low Energy -> Good for Low Complexity / Reading
                     
-                    # Update the free slot (reduce it or remove it)
-                    new_slot_start = task_end_minutes + 10  # 10 min break
-                    if new_slot_start < slot_end:
-                        free_slots[i] = (new_slot_start, slot_end)
-                    else:
-                        free_slots.pop(i)
+                    slot_hour = (slot_start // 60)
                     
-                    task_scheduled = True
-                    break
+                    if 6 <= slot_hour < 12: # Morning
+                        if complexity == 'High' or task.get('priority') == 'Urgent':
+                            score += 10
+                        elif complexity == 'Low':
+                            score -= 5
+                    elif 12 <= slot_hour < 17: # Afternoon
+                        if complexity == 'Medium':
+                            score += 5
+                    elif 17 <= slot_hour < 22: # Evening
+                        if complexity == 'Low':
+                            score += 10
+                        elif complexity == 'High':
+                            score -= 5
+                            
+                    # 2. Tight Fit Bonus (Minimize wasted small gaps)
+                    # If the task fits perfectly or leaves a small gap, that's good.
+                    # If it leaves a huge gap, maybe save that for a bigger task?
+                    # Actually, we want to prioritize slots where it fits well.
+                    # But for now, let's just prioritize earlier slots slightly to break ties
+                    score -= (slot_start / 1440) * 2 # Slight penalty for later slots
+                    
+                    if score > best_slot_score:
+                        best_slot_score = score
+                        best_slot_index = i
+            
+            # If we found a valid slot
+            if best_slot_index != -1:
+                slot_start, slot_end = free_slots[best_slot_index]
+                
+                # Schedule the task
+                task_start_minutes = slot_start
+                task_end_minutes = slot_start + duration
+                
+                schedule_list.append({
+                    "task_id": task.get('id'),
+                    "title": task.get('title'),
+                    "start": minutes_to_time(task_start_minutes),
+                    "end": minutes_to_time(task_end_minutes),
+                    "duration": duration
+                })
+                
+                # Update the free slot (reduce it or remove it)
+                new_slot_start = task_end_minutes + 10  # 10 min break
+                if new_slot_start < slot_end:
+                    free_slots[best_slot_index] = (new_slot_start, slot_end)
+                else:
+                    free_slots.pop(best_slot_index)
+                
+                task_scheduled = True
             
             # If task couldn't be scheduled, skip it
             if not task_scheduled:

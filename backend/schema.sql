@@ -19,6 +19,12 @@ CREATE TABLE IF NOT EXISTS tasks (
     default_expected_time INT,
     ml_predicted_time INT,
     priority TEXT CHECK (priority IN ('Low', 'Medium', 'High', 'Urgent')),
+    complexity TEXT CHECK (complexity IN ('Low', 'Medium', 'High')),
+    num_pages INT,
+    num_slides INT,
+    num_questions INT,
+    manual_time INT,
+    progress INT DEFAULT 0,
     deadline TIMESTAMP,
     status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'In-Progress', 'Completed')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
