@@ -59,6 +59,9 @@ const TaskDetails = () => {
         const now = new Date();
 
         const daysUntilDeadline = Math.max(1, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
+
+        // Calculate daily allocation similar to backend
+        // We want to distribute remaining work evenly
         const minutesPerDay = Math.ceil(totalMinutes / daysUntilDeadline);
 
         const plan = [];

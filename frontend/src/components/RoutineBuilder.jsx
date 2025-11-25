@@ -56,7 +56,6 @@ const RoutineBuilder = ({ userId }) => {
     };
 
     const handleDeleteBlock = async (blockId) => {
-        if (!window.confirm('Remove this activity from your routine?')) return;
         setLoading(true);
         try {
             await deleteRoutineBlock(blockId);

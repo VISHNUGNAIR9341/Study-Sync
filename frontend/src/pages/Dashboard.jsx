@@ -27,7 +27,7 @@ const Dashboard = ({ userId, onLogout }) => {
     const [error, setError] = useState(null);
     const [newTask, setNewTask] = useState({
         title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
-        complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+        complexity: 'Medium', num_pages: '', num_slides: '', num_questions: '', days_to_complete: ''
     });
 
     const loadData = async () => {
@@ -66,7 +66,7 @@ const Dashboard = ({ userId, onLogout }) => {
             setShowAddModal(false);
             setNewTask({
                 title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
-                complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+                complexity: 'Medium', num_pages: '', num_slides: '', num_questions: '', days_to_complete: ''
             });
             await loadData();
         } catch (err) {
@@ -77,7 +77,6 @@ const Dashboard = ({ userId, onLogout }) => {
     };
 
     const handleDeleteTask = async (taskId) => {
-        if (!window.confirm("Are you sure you want to delete this task?")) return;
         setLoading(true);
         try {
             await deleteTask(taskId);
@@ -113,19 +112,20 @@ const Dashboard = ({ userId, onLogout }) => {
         }
     };
 
-    const handleSessionComplete = async (taskId, duration) => {
-        if (!window.confirm(`Mark this ${duration} min session as complete? This will update your task progress.`)) return;
+    const [completedSessions, setCompletedSessions] = useState([]);
+
+    const handleSessionComplete = async (taskId, duration, scheduleIdx) => {
         setLoading(true);
         try {
             await updateTaskProgress(taskId, duration);
-            // Refresh data
+            // Track this session as completed locally to update UI
+            setCompletedSessions(prev => [...prev, scheduleIdx]);
+
+            // Refresh data to update progress bars
             await loadData();
-            // Remove item from schedule locally to give instant feedback (optional, but good UX)
-            // setSchedule(prev => prev.filter(item => item.task_id !== taskId)); 
-            // Actually, we might want to keep it but mark as done visually? 
-            // For now, let's just reload data which updates progress bars.
         } catch (err) {
-            setError("Failed to update progress.");
+            console.error("Error updating progress:", err);
+            setError(`Failed to update progress: ${err.response?.data?.error || err.message}`);
         } finally {
             setLoading(false);
         }
@@ -389,7 +389,9 @@ const Dashboard = ({ userId, onLogout }) => {
 
                                             <div className="flex-1 mb-6">
                                                 <div className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${item.type === 'routine'
-                                                        ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                                    ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                                    : item.type === 'completed_session'
+                                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                                                         : 'bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 border-indigo-100 dark:border-indigo-800'
                                                     }`}>
                                                     <div className="flex justify-between items-start">
@@ -403,7 +405,8 @@ const Dashboard = ({ userId, onLogout }) => {
                                                                     {item.duration >= 60
                                                                         ? `${Math.floor(item.duration / 60)}h ${item.duration % 60 > 0 ? `${item.duration % 60}m` : ''}`
                                                                         : `${item.duration}m`}
-                                                                    {item.type !== 'routine' && ' scheduled'}
+                                                                    {item.type !== 'routine' && item.type !== 'completed_session' && ' scheduled'}
+                                                                    {item.type === 'completed_session' && ' completed'}
                                                                 </p>
                                                                 {item.remaining_minutes !== undefined && (
                                                                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
@@ -414,17 +417,34 @@ const Dashboard = ({ userId, onLogout }) => {
                                                             </div>
                                                         </div>
                                                         <div className="text-right text-xs text-gray-400">
-                                                            Ends at {item.end}
+                                                            {item.type === 'completed_session' ? (
+                                                                <span className="text-green-600 font-bold">Done</span>
+                                                            ) : (
+                                                                `Ends at ${item.end}`
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    {item.type !== 'routine' && (
+                                                    {item.type !== 'routine' && item.type !== 'completed_session' && (
                                                         <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-800 flex justify-end">
-                                                            <button
-                                                                onClick={() => handleSessionComplete(item.task_id, item.duration)}
-                                                                className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
-                                                            >
-                                                                <CheckCircle size={14} /> Mark as Done
-                                                            </button>
+                                                            {completedSessions.includes(idx) ? (
+                                                                <span className="text-xs flex items-center gap-1 text-gray-500 font-medium bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                                                    <CheckCircle size={14} className="text-green-500" /> Done for today
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleSessionComplete(item.task_id, item.duration, idx)}
+                                                                    className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
+                                                                >
+                                                                    <CheckCircle size={14} /> Mark as Done
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {item.type === 'completed_session' && (
+                                                        <div className="mt-3 pt-3 border-t border-green-100 dark:border-green-900 flex justify-end">
+                                                            <span className="text-xs flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                                                                <CheckCircle size={14} /> Completed Today
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -562,15 +582,41 @@ const Dashboard = ({ userId, onLogout }) => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         <CalendarClock size={16} className="inline mr-1" />
-                                        Deadline
+                                        Days to Complete
                                     </label>
-                                    <input
-                                        type="datetime-local"
-                                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        value={newTask.deadline}
-                                        onChange={e => setNewTask({ ...newTask, deadline: e.target.value })}
-                                        required
-                                    />
+                                    <div className="flex gap-4 items-center">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            placeholder="e.g. 3"
+                                            className="w-1/3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            value={newTask.days_to_complete || ''}
+                                            onChange={e => {
+                                                const days = parseInt(e.target.value);
+                                                const date = new Date();
+                                                date.setDate(date.getDate() + (days || 0));
+                                                // Set time to end of day (23:59)
+                                                date.setHours(23, 59, 0, 0);
+
+                                                // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+                                                const formatted = date.toISOString().slice(0, 16);
+
+                                                setNewTask({
+                                                    ...newTask,
+                                                    days_to_complete: e.target.value,
+                                                    deadline: formatted
+                                                });
+                                            }}
+                                            required
+                                        />
+                                        {newTask.deadline && (
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-4 py-2 rounded-lg flex-1 border border-gray-200 dark:border-gray-600">
+                                                Deadline: <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                                    {new Date(newTask.deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-6">

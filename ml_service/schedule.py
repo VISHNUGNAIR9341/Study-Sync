@@ -1,5 +1,6 @@
 import sys
 import json
+import math
 from datetime import datetime, timedelta
 
 def parse_time(time_str):
@@ -95,9 +96,11 @@ def schedule():
             return
             
         data = json.loads(input_data)
+        user_id = data.get('user_id')
         routine = data.get('routine', {})
         tasks = data.get('tasks', [])
         routine_blocks = data.get('routine_blocks', [])
+        completed_today = data.get('completed_today', {}) # New field
         
         # Get wake up and sleep times
         wake_up_str = routine.get('wake_up', '07:00')
@@ -128,10 +131,57 @@ def schedule():
             if remaining_minutes < 1:
                 continue
                 
-            # For now, we schedule the entire remaining time as one session 
-            # But we cap it at 90 minutes to prevent burnout and encourage splitting
+            # Calculate days until deadline
+            deadline_str = task.get('deadline')
+            days_until_deadline = 1
+            if deadline_str:
+                try:
+                    deadline_dt = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+                except ValueError:
+                    try:
+                        deadline_dt = datetime.strptime(deadline_str, "%Y-%m-%dT%H:%M")
+                    except ValueError:
+                         deadline_dt = datetime.now() + timedelta(days=1)
+
+                now = datetime.now()
+                # Calculate difference in days, rounding up
+                diff = deadline_dt - now
+                days_until_deadline = max(1, diff.days + 1)
+            
+            # Distribute remaining time across available days
+            # We want to do a portion of the work today
+            daily_allocation = math.ceil(remaining_minutes / days_until_deadline)
+            
+            # Check if we already did work today
+            completed_mins = completed_today.get(task.get('id'), 0)
+            
+            # If we did work, add a "Done" item to the schedule for display purposes
+            if completed_mins > 0:
+                schedule_list.append({
+                    "task_id": task.get('id'),
+                    "title": task.get('title'),
+                    "start": "Done", # Special marker
+                    "end": "Today",
+                    "duration": completed_mins,
+                    "type": "completed_session",
+                    "status": "Completed"
+                })
+            
+            # Reduce daily allocation by what we already did
+            daily_allocation -= completed_mins
+            
+            if daily_allocation <= 0:
+                # We met our daily goal! No more scheduling for today.
+                continue
+
+            # Cap at 90 minutes or the daily allocation, whichever is smaller (but at least 30 mins if possible)
+            # Actually, we should try to do the daily allocation.
+            # But we also respect the 90 min burnout cap per session.
             MAX_SESSION_DURATION = 90
-            duration = min(remaining_minutes, MAX_SESSION_DURATION)
+            target_duration = min(daily_allocation, MAX_SESSION_DURATION)
+            
+            # Ensure we don't schedule more than remaining
+            duration = min(target_duration, remaining_minutes)
             
             complexity = task.get('complexity', 'Medium')
             task_scheduled = False

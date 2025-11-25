@@ -17,16 +17,7 @@ router.get('/details/:taskId', async (req, res) => {
     }
 });
 
-// Get all tasks for a user
-router.get('/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const result = await db.query('SELECT * FROM tasks WHERE user_id = $1 ORDER BY deadline ASC', [userId]);
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+
 
 // Create a new task
 router.post('/', async (req, res) => {
@@ -107,6 +98,15 @@ router.post('/:taskId/progress', async (req, res) => {
             [newProgress, newStatus, taskId]
         );
 
+        // Log the session if duration provided
+        if (duration) {
+            await db.query(
+                `INSERT INTO sessions (task_id, user_id, start_time, end_time, duration_minutes)
+                 VALUES ($1, $2, NOW() - ($3 || ' minutes')::INTERVAL, NOW(), $3)`,
+                [taskId, task.user_id, duration]
+            );
+        }
+
         // If completed, award points and log history (reuse logic if possible, or duplicate for now)
         if (newStatus === 'Completed' && task.status !== 'Completed') {
             const points = 10;
@@ -168,6 +168,18 @@ router.delete('/:taskId', async (req, res) => {
             return res.status(404).json({ error: 'Task not found' });
         }
         res.json({ message: 'Task deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all tasks for a user
+// MOVED TO BOTTOM TO AVOID CONFLICT WITH OTHER ROUTES
+router.get('/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const result = await db.query('SELECT * FROM tasks WHERE user_id = $1 ORDER BY deadline ASC', [userId]);
+        res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
