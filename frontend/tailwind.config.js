@@ -10,7 +10,7 @@ export default {
             colors: {
                 primary: '#4F46E5', // Indigo 600
                 secondary: '#10B981', // Emerald 500
-                background: '#F3F4F6', // Gray 100
+                background: '#f8fafc', // Slate 50
                 surface: '#FFFFFF',
             },
             fontFamily: {

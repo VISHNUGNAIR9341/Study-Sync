@@ -52,17 +52,17 @@ const WellnessDashboard = () => {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl">
-                    <Heart className="text-white" size={24} />
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                    <Heart className="text-emerald-600 dark:text-emerald-400" size={24} />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Wellness Dashboard</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Track your daily health essentials</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Wellness Dashboard</h2>
+                    <p className="text-sm text-slate-500 dark:text-gray-400">Track your daily health essentials</p>
                 </div>
             </div>
 
             {/* Wellness Score */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 p-6 rounded-2xl">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Daily Score</h3>
                     <div className="text-right">
@@ -205,7 +205,7 @@ const WellnessDashboard = () => {
             </div>
 
             {/* Recommendation */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 p-4 rounded-xl">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
                     <h3 className="font-bold text-gray-800 dark:text-gray-100">Tip of the Day</h3>

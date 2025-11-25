@@ -47,8 +47,8 @@ const UserProfile = ({ userId, tasks }) => {
         <div className="space-y-6">
             {/* User Details Card */}
             {user && (
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700 flex items-center gap-6">
+                    <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-3xl font-bold shadow-sm">
                         {user.name ? user.name.charAt(0).toUpperCase() : <User />}
                     </div>
                     <div>
@@ -67,7 +67,7 @@ const UserProfile = ({ userId, tasks }) => {
 
             {/* User Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 p-4 rounded-xl">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-2">
                         <Award className="text-blue-600 dark:text-blue-400" size={20} />
                         <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Completed</p>
@@ -75,7 +75,7 @@ const UserProfile = ({ userId, tasks }) => {
                     <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{completedTasks.length}</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 p-4 rounded-xl">
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock className="text-purple-600 dark:text-purple-400" size={20} />
                         <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Total Study Time</p>
@@ -83,20 +83,20 @@ const UserProfile = ({ userId, tasks }) => {
                     <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{Math.round(totalStudyTime / 60)}h</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 p-4 rounded-xl">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">Avg Task Time</p>
+                        <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={20} />
+                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Avg Task Time</p>
                     </div>
-                    <p className="text-3xl font-bold text-green-900 dark:text-green-100">{avgTaskTime}m</p>
+                    <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">{avgTaskTime}m</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900 dark:to-amber-900 p-4 rounded-xl">
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="text-orange-600 dark:text-orange-400" size={20} />
-                        <p className="text-sm font-medium text-orange-800 dark:text-orange-200">This Week</p>
+                        <Calendar className="text-amber-600 dark:text-amber-400" size={20} />
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">This Week</p>
                     </div>
-                    <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                    <p className="text-3xl font-bold text-amber-900 dark:text-amber-100">
                         {completedTasks.filter(t => {
                             const completedDate = new Date(t.updated_at || t.created_at);
                             const weekAgo = new Date();
@@ -111,15 +111,15 @@ const UserProfile = ({ userId, tasks }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Task History Timeline (2/3 width) */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl">
-                                    <User className="text-white" size={24} />
+                                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                                    <User className="text-indigo-600 dark:text-indigo-400" size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Task History</h2>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Your completed tasks</p>
+                                    <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Task History</h2>
+                                    <p className="text-sm text-slate-500 dark:text-gray-400">Your completed tasks</p>
                                 </div>
                             </div>
                         </div>

@@ -76,12 +76,12 @@ const DatabaseViewer = ({ onClose }) => {
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl">
-                            <Database className="text-white" size={24} />
+                        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                            <Database className="text-blue-600 dark:text-blue-400" size={24} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Database Viewer</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Inspect your application database (Read-only)</p>
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Database Viewer</h2>
+                            <p className="text-sm text-slate-500 dark:text-gray-400">Inspect your application database (Read-only)</p>
                         </div>
                     </div>
                     <button
@@ -95,7 +95,7 @@ const DatabaseViewer = ({ onClose }) => {
                 {/* Content */}
                 <div className="flex-1 overflow-hidden flex">
                     {/* Table List Sidebar */}
-                    <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                    <div className="w-64 border-r border-slate-200 dark:border-gray-700 p-4 overflow-y-auto bg-slate-50 dark:bg-gray-900">
                         <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                             <Table size={16} />
                             Tables ({tables.length})
@@ -106,8 +106,8 @@ const DatabaseViewer = ({ onClose }) => {
                                     key={table.table_name}
                                     onClick={() => selectTable(table.table_name)}
                                     className={`w-full text-left px-3 py-2 rounded-lg transition-all flex items-center justify-between ${selectedTable === table.table_name
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
                                         }`}
                                 >
                                     <span className="font-medium text-sm">{table.table_name}</span>
@@ -133,7 +133,7 @@ const DatabaseViewer = ({ onClose }) => {
                                 {/* Schema Section */}
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">Schema</h3>
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                    <div className="bg-slate-50 dark:bg-gray-900 rounded-lg overflow-hidden border border-slate-200 dark:border-gray-700">
                                         <table className="w-full">
                                             <thead className="bg-gray-100 dark:bg-gray-800">
                                                 <tr>
@@ -167,7 +167,7 @@ const DatabaseViewer = ({ onClose }) => {
                                             Showing {pagination.offset + 1} - {Math.min(pagination.offset + pagination.limit, pagination.total)}
                                         </span>
                                     </div>
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
+                                    <div className="bg-slate-50 dark:bg-gray-900 rounded-lg overflow-x-auto border border-slate-200 dark:border-gray-700">
                                         <table className="w-full">
                                             <thead className="bg-gray-100 dark:bg-gray-800">
                                                 <tr>

@@ -41,21 +41,21 @@ const ExamMode = () => {
     };
 
     const getUrgencyColor = (days) => {
-        if (days < 0) return 'bg-gray-100 text-gray-600';
-        if (days <= 3) return 'bg-gradient-to-r from-red-500 to-pink-500 text-white';
-        if (days <= 7) return 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white';
-        return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
+        if (days < 0) return 'bg-slate-100 text-slate-600';
+        if (days <= 3) return 'bg-rose-200 text-rose-900';
+        if (days <= 7) return 'bg-amber-200 text-amber-900';
+        return 'bg-sky-200 text-sky-900';
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-                    <GraduationCap className="text-blue-500" /> Exam Countdown
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
+                    <GraduationCap className="text-sky-500" /> Exam Countdown
                 </h2>
                 <button
                     onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all"
+                    className="flex items-center gap-2 bg-sky-200 text-sky-900 px-4 py-2 rounded-lg hover:bg-sky-300 transition-all font-medium"
                 >
                     <Plus size={18} /> Add Exam
                 </button>

@@ -261,8 +261,8 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
     if (compact) {
         return (
             <div className="space-y-4">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-3 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-gray-100 mb-3 flex items-center gap-2">
                         <TrendingUp size={16} />
                         Quick Analytics
                     </h3>
@@ -279,8 +279,8 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
                     <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">Completion Rate</p>
                 </div>
 
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 p-4 rounded-xl">
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Recommendation</p>
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                    <p className="text-xs font-medium text-slate-600 dark:text-gray-300 mb-1">Recommendation</p>
                     <p className="text-sm text-gray-800 dark:text-gray-100">
                         {avgDailyTime < 60
                             ? "Try to study at least 1 hour per day!"
@@ -299,12 +299,12 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl">
-                        <TrendingUp className="text-white" size={24} />
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                        <TrendingUp className="text-indigo-600 dark:text-indigo-400" size={24} />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Study Analytics</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Track your productivity and progress</p>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Study Analytics</h2>
+                        <p className="text-sm text-slate-500 dark:text-gray-400">Track your productivity and progress</p>
                     </div>
                 </div>
 
@@ -315,8 +315,8 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
                             key={range}
                             onClick={() => setTimeRange(range)}
                             className={`px-4 py-2 rounded-lg font-medium transition-all ${timeRange === range
-                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                ? 'bg-indigo-200 text-indigo-900 shadow-sm'
+                                : 'bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
                                 }`}
                         >
                             {range === 'all' ? 'All Time' : range.charAt(0).toUpperCase() + range.slice(1)}
@@ -327,7 +327,7 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 p-4 rounded-xl">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock className="text-blue-600 dark:text-blue-400" size={20} />
                         <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Study Time</p>
@@ -336,7 +336,7 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
                     <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{totalStudyTime} minutes</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 p-4 rounded-xl">
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
                     <div className="flex items-center gap-2 mb-2">
                         <Zap className="text-purple-600 dark:text-purple-400" size={20} />
                         <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Avg Daily Time</p>
@@ -345,24 +345,24 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
                     <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">per day</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 p-4 rounded-xl">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Target className="text-green-600 dark:text-green-400" size={20} />
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">Completion Rate</p>
+                        <Target className="text-emerald-600 dark:text-emerald-400" size={20} />
+                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Completion Rate</p>
                     </div>
-                    <p className="text-3xl font-bold text-green-900 dark:text-green-100">{completionRate}%</p>
-                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">{completedTasks} completed</p>
+                    <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">{completionRate}%</p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">{completedTasks} completed</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900 dark:to-amber-900 p-4 rounded-xl">
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800">
                     <div className="flex items-center gap-2 mb-2">
-                        <Award className="text-orange-600 dark:text-orange-400" size={20} />
-                        <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Best Hour</p>
+                        <Award className="text-amber-600 dark:text-amber-400" size={20} />
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Best Hour</p>
                     </div>
-                    <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                    <p className="text-3xl font-bold text-amber-900 dark:text-amber-100">
                         {analyticsData.bestHours[0]?.hour || 0}:00
                     </p>
-                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">Most productive</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Most productive</p>
                 </div>
             </div>
 
@@ -414,8 +414,8 @@ const AnalyticsDashboard = ({ tasks = [], userId, compact = false }) => {
             </div>
 
             {/* Insights */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 p-6 rounded-2xl">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Insights</h3>
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-800">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4">Insights</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl">
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Most Productive Hours</p>

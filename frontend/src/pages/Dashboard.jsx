@@ -130,34 +130,34 @@ const Dashboard = ({ userId, onLogout }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 transition-colors duration-200 font-sans">
             <div className="max-w-7xl mx-auto">
                 <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <div className="flex items-center gap-4">
                         <img src="/logo.png" alt="StudySync Logo" className="w-24 h-24 object-contain" />
                         <div>
-                            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500">
+                            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
                                 StudySync
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-300 mt-1 font-medium">Master your schedule, maximize your potential.</p>
+                            <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Master your schedule, maximize your potential.</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <DarkModeToggle />
-                        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-2.5 rounded-full shadow-lg transform hover:scale-110 transition-all">
-                            <Trophy className="text-white" size={22} />
-                            <span className="font-black text-white">{userStats.points} pts</span>
+                        <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 px-4 py-2 rounded-full transform hover:scale-105 transition-all border border-amber-200 dark:border-amber-800">
+                            <Trophy className="text-amber-600 dark:text-amber-400" size={20} />
+                            <span className="font-bold text-amber-700 dark:text-amber-300">{userStats.points} pts</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 rounded-full shadow-lg transform hover:scale-110 transition-all">
-                            <Flame className="text-white animate-bounce" size={22} />
-                            <span className="font-black text-white">{userStats.streak} day streak</span>
+                        <div className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 px-4 py-2 rounded-full transform hover:scale-105 transition-all border border-orange-200 dark:border-orange-800">
+                            <Flame className="text-orange-500 dark:text-orange-400" size={20} />
+                            <span className="font-bold text-orange-700 dark:text-orange-300">{userStats.streak} day streak</span>
                         </div>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-8 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-110 font-bold"
+                            className="flex items-center gap-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-100 px-6 py-2.5 rounded-full hover:bg-indigo-300 dark:hover:bg-indigo-700 transition-all transform hover:scale-105 font-semibold"
                         >
-                            <Plus size={22} className="animate-spin" /> New Task
+                            <Plus size={20} /> New Task
                         </button>
                         <button
                             onClick={onLogout}
@@ -176,57 +176,57 @@ const Dashboard = ({ userId, onLogout }) => {
                 )}
 
                 {/* Tab Navigation */}
-                <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+                <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
                     <button
                         onClick={() => setActiveTab('tasks')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'tasks'
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900 dark:hover:to-cyan-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'tasks'
+                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Tasks & Schedule
                     </button>
                     <button
                         onClick={() => setActiveTab('profile')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'profile'
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900 dark:hover:to-purple-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'profile'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Profile
                     </button>
                     <button
                         onClick={() => setActiveTab('routine')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'routine'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900 dark:hover:to-pink-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'routine'
+                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Daily Routine
                     </button>
                     <button
                         onClick={() => setActiveTab('wellness')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'wellness'
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900 dark:hover:to-emerald-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'wellness'
+                            ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Wellness
                     </button>
                     <button
                         onClick={() => setActiveTab('exams')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'exams'
-                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900 dark:hover:to-red-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'exams'
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Exams
                     </button>
                     <button
                         onClick={() => setActiveTab('settings')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'settings'
-                            ? 'bg-gradient-to-r from-gray-600 to-gray-800 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800 dark:hover:to-gray-700 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'settings'
+                            ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Settings

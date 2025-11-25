@@ -113,7 +113,7 @@ const TaskDetails = () => {
     if (!task) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 transition-colors duration-200 font-sans">
             <div className="max-w-5xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}
@@ -123,7 +123,7 @@ const TaskDetails = () => {
                 </button>
 
                 {/* Task Header Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-gray-700 mb-8">
                     <div className="flex justify-between items-start">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -137,7 +137,7 @@ const TaskDetails = () => {
                                     {task.category}
                                 </span>
                             </div>
-                            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{task.title}</h1>
+                            <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-4">{task.title}</h1>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="flex items-center gap-2">
@@ -236,9 +236,9 @@ const TaskDetails = () => {
                             )}
                         </div>
 
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl p-6 text-indigo-900 dark:text-indigo-100 shadow-sm border border-indigo-200 dark:border-indigo-800">
                             <h3 className="font-bold text-lg mb-2">Study Tip</h3>
-                            <p className="text-indigo-100 text-sm">
+                            <p className="text-indigo-800 dark:text-indigo-200 text-sm">
                                 Breaking down "{task.title}" into {schedule.length} smaller sessions will improve retention by 40% compared to doing it all at once!
                             </p>
                         </div>
