@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser } from '../api';
+import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser, updateTaskProgress } from '../api';
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Loader2, Trash2, Trophy, Flame, CalendarClock } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
 import RoutineBuilder from '../components/RoutineBuilder';
@@ -108,6 +108,24 @@ const Dashboard = ({ userId, onLogout }) => {
             setSchedule(scheduleData || []);
         } catch (err) {
             setError("Failed to generate schedule.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSessionComplete = async (taskId, duration) => {
+        if (!window.confirm(`Mark this ${duration} min session as complete? This will update your task progress.`)) return;
+        setLoading(true);
+        try {
+            await updateTaskProgress(taskId, duration);
+            // Refresh data
+            await loadData();
+            // Remove item from schedule locally to give instant feedback (optional, but good UX)
+            // setSchedule(prev => prev.filter(item => item.task_id !== taskId)); 
+            // Actually, we might want to keep it but mark as done visually? 
+            // For now, let's just reload data which updates progress bars.
+        } catch (err) {
+            setError("Failed to update progress.");
         } finally {
             setLoading(false);
         }
@@ -334,9 +352,18 @@ const Dashboard = ({ userId, onLogout }) => {
                         <div className="lg:col-span-2">
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-full">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                                        <Calendar className="text-indigo-500" /> Daily Plan
-                                    </h2>
+                                    <div>
+                                        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                                            <Calendar className="text-indigo-500" /> Daily Plan
+                                        </h2>
+                                        {schedule.length > 0 && (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                                                Total Study Time: <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                    {(schedule.filter(i => i.type !== 'routine').reduce((acc, curr) => acc + curr.duration, 0) / 60).toFixed(1)} hours
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
                                     <button
                                         onClick={handleGenerateSchedule}
                                         disabled={loading}
@@ -361,18 +388,45 @@ const Dashboard = ({ userId, onLogout }) => {
                                             <div className="absolute left-[4.2rem] top-5 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10"></div>
 
                                             <div className="flex-1 mb-6">
-                                                <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm hover:shadow-md transition-all">
+                                                <div className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${item.type === 'routine'
+                                                        ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                                        : 'bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 border-indigo-100 dark:border-indigo-800'
+                                                    }`}>
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{item.title}</h3>
-                                                            <p className="text-indigo-600 dark:text-indigo-400 text-sm font-medium mt-1 flex items-center gap-1">
-                                                                <Clock size={14} /> {item.duration} minutes
-                                                            </p>
+                                                            <h3 className={`text-lg font-bold ${item.type === 'routine' ? 'text-gray-600 dark:text-gray-300' : 'text-gray-800 dark:text-gray-100'}`}>
+                                                                {item.title}
+                                                            </h3>
+                                                            <div className={`${item.type === 'routine' ? 'text-gray-500' : 'text-indigo-600 dark:text-indigo-400'} text-sm font-medium mt-1 space-y-1`}>
+                                                                <p className="flex items-center gap-1">
+                                                                    <Clock size={14} />
+                                                                    {item.duration >= 60
+                                                                        ? `${Math.floor(item.duration / 60)}h ${item.duration % 60 > 0 ? `${item.duration % 60}m` : ''}`
+                                                                        : `${item.duration}m`}
+                                                                    {item.type !== 'routine' && ' scheduled'}
+                                                                </p>
+                                                                {item.remaining_minutes !== undefined && (
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                                        <Loader2 size={12} />
+                                                                        {Math.floor(item.remaining_minutes / 60)}h {item.remaining_minutes % 60}m remaining total
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <div className="text-right text-xs text-gray-400">
                                                             Ends at {item.end}
                                                         </div>
                                                     </div>
+                                                    {item.type !== 'routine' && (
+                                                        <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-800 flex justify-end">
+                                                            <button
+                                                                onClick={() => handleSessionComplete(item.task_id, item.duration)}
+                                                                className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
+                                                            >
+                                                                <CheckCircle size={14} /> Mark as Done
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

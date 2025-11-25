@@ -44,6 +44,13 @@ const TaskDetails = () => {
         loadData();
     }, [taskId]);
 
+    // Re-generate long term plan when dailyPlan changes to ensure sync
+    useEffect(() => {
+        if (task) {
+            generateLongTermPlan(task);
+        }
+    }, [dailyPlan, task]);
+
     const generateLongTermPlan = (task) => {
         // Simple logic to distribute work
         // Assume we can work 2 hours a day on this task
@@ -57,18 +64,40 @@ const TaskDetails = () => {
         const plan = [];
         let remainingMinutes = totalMinutes;
 
+        // Check if we have scheduled sessions for today in dailyPlan
+        // Note: dailyPlan is fetched in useEffect
+        // We need to pass dailyPlan to this function or use state. 
+        // Since state updates are async, we might need to call this inside useEffect or pass data.
+        // Let's assume we call this after dailyPlan is set, or re-run this when dailyPlan changes.
+
+        // Actually, let's just build the plan normally, then override the first day if we have real data.
+
         for (let i = 0; i < daysUntilDeadline; i++) {
             if (remainingMinutes <= 0) break;
 
             const date = new Date();
             date.setDate(date.getDate() + i);
+            const dateString = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-            const sessionDuration = Math.min(remainingMinutes, minutesPerDay); // Cap at calculated daily need
+            let sessionDuration = Math.min(remainingMinutes, minutesPerDay); // Cap at calculated daily need
+            let focus = `Part ${i + 1}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`;
+
+            // Override for Today if we have real schedule data
+            if (i === 0 && dailyPlan.length > 0) {
+                const todaySessions = dailyPlan.filter(item => item.title === task.title);
+                if (todaySessions.length > 0) {
+                    const totalScheduledToday = todaySessions.reduce((acc, curr) => acc + curr.duration, 0);
+                    if (totalScheduledToday > 0) {
+                        sessionDuration = totalScheduledToday;
+                        focus = `Scheduled Today: ${todaySessions.map(s => `${s.start}-${s.end}`).join(', ')}`;
+                    }
+                }
+            }
 
             plan.push({
-                date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                date: dateString,
                 duration: sessionDuration,
-                focus: `Part ${i + 1}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`
+                focus: focus
             });
 
             remainingMinutes -= sessionDuration;

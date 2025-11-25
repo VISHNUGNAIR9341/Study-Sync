@@ -70,6 +70,60 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Update task progress
+router.post('/:taskId/progress', async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const { duration, completed } = req.body; // duration in minutes
+
+        // Get current task info
+        const taskResult = await db.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+        if (taskResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+        const task = taskResult.rows[0];
+
+        let newProgress = task.progress || 0;
+        let newStatus = task.status;
+
+        if (completed) {
+            newProgress = 100;
+            newStatus = 'Completed';
+        } else if (duration) {
+            // Calculate percentage increase
+            const totalTime = task.manual_time || task.ml_predicted_time || task.default_expected_time || 60;
+            const percentageIncrease = Math.round((duration / totalTime) * 100);
+            newProgress = Math.min(100, newProgress + percentageIncrease);
+
+            if (newProgress >= 100) {
+                newStatus = 'Completed';
+            } else if (newStatus === 'Pending') {
+                newStatus = 'In-Progress';
+            }
+        }
+
+        const updateResult = await db.query(
+            'UPDATE tasks SET progress = $1, status = $2 WHERE id = $3 RETURNING *',
+            [newProgress, newStatus, taskId]
+        );
+
+        // If completed, award points and log history (reuse logic if possible, or duplicate for now)
+        if (newStatus === 'Completed' && task.status !== 'Completed') {
+            const points = 10;
+            await db.query('UPDATE users SET points = points + $1 WHERE id = $2', [points, task.user_id]);
+            await db.query(
+                `INSERT INTO task_history (user_id, task_id, title, category, priority, status, completed_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                [task.user_id, task.id, task.title, task.category, task.priority, 'Completed']
+            );
+        }
+
+        res.json(updateResult.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update task status
 router.put('/:taskId/status', async (req, res) => {
     try {

@@ -14,10 +14,20 @@ def time_to_minutes(time_obj):
     return time_obj.hour * 60 + time_obj.minute
 
 def minutes_to_time(minutes):
-    """Convert minutes since midnight to time string"""
+    """Convert minutes since midnight to time string (12-hour format)"""
     hours = minutes // 60
     mins = minutes % 60
-    return f"{hours:02d}:{mins:02d}"
+    
+    period = "AM"
+    if hours >= 12:
+        period = "PM"
+    
+    if hours > 12:
+        hours -= 12
+    elif hours == 0:
+        hours = 12
+        
+    return f"{hours:02d}:{mins:02d} {period}"
 
 def get_free_slots(wake_up_str, sleep_str, routine_blocks):
     """
@@ -110,7 +120,19 @@ def schedule():
         
         # Schedule tasks in free slots
         for task in sorted_tasks:
-            duration = task.get('predicted_time', 30)
+            total_time = task.get('predicted_time', 30)
+            progress = task.get('progress', 0)
+            remaining_minutes = int(total_time * (1 - progress / 100.0))
+            
+            # If task is completed or almost completed (less than 1 min), skip
+            if remaining_minutes < 1:
+                continue
+                
+            # For now, we schedule the entire remaining time as one session 
+            # But we cap it at 90 minutes to prevent burnout and encourage splitting
+            MAX_SESSION_DURATION = 90
+            duration = min(remaining_minutes, MAX_SESSION_DURATION)
+            
             complexity = task.get('complexity', 'Medium')
             task_scheduled = False
             
@@ -171,7 +193,9 @@ def schedule():
                     "title": task.get('title'),
                     "start": minutes_to_time(task_start_minutes),
                     "end": minutes_to_time(task_end_minutes),
-                    "duration": duration
+                    "duration": duration,
+                    "remaining_minutes": remaining_minutes, # Pass this back
+                    "total_minutes": total_time
                 })
                 
                 # Update the free slot (reduce it or remove it)
@@ -184,11 +208,59 @@ def schedule():
                 task_scheduled = True
             
             # If task couldn't be scheduled, skip it
+                task_scheduled = True
+            
+            # If task couldn't be scheduled, skip it
             if not task_scheduled:
                 print(json.dumps({
                     "warning": f"Could not schedule task '{task.get('title')}' - no free slots available",
                     "schedule": schedule_list
                 }), file=sys.stderr)
+        
+        # Add routine blocks to the schedule
+        for block in routine_blocks:
+            # Parse times to ensure consistent format
+            start_time = parse_time(block['start_time'])
+            end_time = parse_time(block['end_time'])
+            
+            # Handle wrapping (e.g. sleep 22:00 to 06:00)
+            # For the daily view, we might want to split or just show it as is.
+            # If it wraps, it technically belongs to "today" (start) and "tomorrow" (end).
+            # For simplicity in a daily view, we'll just add it. 
+            # If it starts late (e.g. 22:00), it's at the end of the day.
+            # If it ends early (e.g. 06:00), it might be from previous day? 
+            # The current logic assumes routine blocks are for "today".
+            
+            # Let's just convert to minutes for sorting
+            start_mins = time_to_minutes(start_time)
+            end_mins = time_to_minutes(end_time)
+            
+            duration = end_mins - start_mins
+            if duration < 0: duration += 24 * 60 # Handle wrap around duration calculation
+            
+            schedule_list.append({
+                "task_id": f"routine-{block.get('id', 'unknown')}", # distinct ID
+                "title": block.get('activity_type', 'Routine').capitalize(),
+                "start": minutes_to_time(start_mins),
+                "end": minutes_to_time(end_mins),
+                "duration": duration,
+                "type": "routine", # Mark as routine
+                "activity_type": block.get('activity_type')
+            })
+            
+        # Sort entire schedule by start time
+        # We need to convert back to minutes for sorting because "10:00 PM" string sort is wrong vs "09:00 AM"
+        def get_sort_key(item):
+            # Parse "HH:MM AM/PM" back to minutes
+            t_str = item['start']
+            # Remove AM/PM for parsing if needed, or just use datetime
+            try:
+                dt = datetime.strptime(t_str, "%I:%M %p")
+                return dt.hour * 60 + dt.minute
+            except:
+                return 0
+
+        schedule_list.sort(key=get_sort_key)
         
         print(json.dumps({"schedule": schedule_list}))
         

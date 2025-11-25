@@ -30,7 +30,8 @@ router.post('/generate', async (req, res) => {
             predicted_time: t.manual_time || t.ml_predicted_time || t.default_expected_time,
             deadline: t.deadline,
             priority: t.priority,
-            complexity: t.complexity || 'Medium'
+            complexity: t.complexity || 'Medium',
+            progress: t.progress || 0
         }));
 
         // 4. Call ML Service to Schedule (with routine_blocks)
