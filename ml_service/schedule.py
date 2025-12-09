@@ -87,6 +87,61 @@ def get_free_slots(wake_up_str, sleep_str, routine_blocks):
     
     return free_slots
 
+def break_task_into_sessions(task):
+    """
+    Break a task into optimal study sessions based on educational psychology research.
+    - Sessions of 20-45 minutes are ideal for retention
+    - Distribute work across days when deadline allows
+    """
+    duration = task.get('predicted_time', 30)
+    deadline_str = task.get('deadline')
+    
+    # Calculate days until deadline
+    if deadline_str:
+        try:
+            task_deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+            now = datetime.now()
+            days_available = max(1, (task_deadline - now).days + 1)
+        except:
+            days_available = min(7, max(3, duration // 30))
+    else:
+        # Default to spreading over 3-7 days based on task length
+        days_available = min(7, max(3, duration // 30))
+    
+    sessions = []
+    
+    # Break down strategy based on duration
+    if duration <= 45:
+        # Short task - do in one session
+        sessions.append({
+            "duration": duration,
+            "session_num": 1,
+            "total_sessions": 1
+        })
+    else:
+        # Long task - break into chunks
+        # Optimal session length: 20-45 minutes
+        optimal_session_length = 30
+        
+        # Calculate number of sessions needed
+        num_sessions = max(2, min(days_available, (duration + optimal_session_length - 1) // optimal_session_length))
+        minutes_per_session = duration // num_sessions
+        remaining_minutes = duration % num_sessions
+        
+        for i in range(num_sessions):
+            session_duration = minutes_per_session
+            if i < remaining_minutes:
+                session_duration += 1
+            
+            sessions.append({
+                "duration": session_duration,
+                "session_num": i + 1,
+                "total_sessions": num_sessions
+            })
+    
+    return sessions
+
+
 def schedule():
     try:
         # Read input from stdin
@@ -120,7 +175,12 @@ def schedule():
         
         # Schedule tasks in free slots
         for task in sorted_tasks:
-            duration = task.get('predicted_time', 30)
+            # Break task into optimal sessions
+            sessions = break_task_into_sessions(task)
+            
+            # For today, only schedule the first session (or full task if single session)
+            first_session = sessions[0]
+            duration = first_session["duration"]
             complexity = task.get('complexity', 'Medium')
             task_scheduled = False
             
@@ -176,12 +236,24 @@ def schedule():
                 task_start_minutes = slot_start
                 task_end_minutes = slot_start + duration
                 
+                # Create session title
+                task_title = task.get('title')
+                if first_session["total_sessions"] > 1:
+                    session_title = f"{task_title} (Part {first_session['session_num']}/{first_session['total_sessions']})"
+                else:
+                    session_title = task_title
+                
                 schedule_list.append({
                     "task_id": task.get('id'),
-                    "title": task.get('title'),
+                    "title": session_title,
                     "start": minutes_to_time(task_start_minutes),
                     "end": minutes_to_time(task_end_minutes),
-                    "duration": duration
+                    "duration": duration,
+                    "session_info": {
+                        "session_num": first_session["session_num"],
+                        "total_sessions": first_session["total_sessions"],
+                        "is_multi_session": first_session["total_sessions"] > 1
+                    }
                 })
                 
                 # Update the free slot (reduce it or remove it)

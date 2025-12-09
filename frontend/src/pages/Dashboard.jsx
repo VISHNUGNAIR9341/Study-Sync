@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser } from '../api';
+import { fetchTasks, createTask, generateSchedule, updateTaskStatus, updateTaskProgress, deleteTask, fetchUser } from '../api';
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Loader2, Trash2, Trophy, Flame, CalendarClock } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
 import RoutineBuilder from '../components/RoutineBuilder';
@@ -19,6 +19,7 @@ import DatabaseViewer from '../components/DatabaseViewer';
 const Dashboard = ({ userId, onLogout }) => {
     const [tasks, setTasks] = useState([]);
     const [schedule, setSchedule] = useState([]);
+    const [completedScheduleItems, setCompletedScheduleItems] = useState(new Set());
     const [activeTab, setActiveTab] = useState('tasks');
     const [showDatabaseViewer, setShowDatabaseViewer] = useState(false);
     const [userStats, setUserStats] = useState({ points: 0, streak: 0 });
@@ -51,6 +52,87 @@ const Dashboard = ({ userId, onLogout }) => {
     useEffect(() => {
         loadData();
     }, [userId]);
+
+    // Auto-generate schedule when dashboard loads or tasks change
+    useEffect(() => {
+        const autoGenerateSchedule = async () => {
+            if (tasks.length > 0 && userId) {
+                try {
+                    const scheduleData = await generateSchedule(userId);
+                    setSchedule(scheduleData || []);
+
+                    // Load saved completion state from localStorage
+                    const savedDate = localStorage.getItem('schedule_date');
+                    const today = new Date().toDateString();
+
+                    // Only restore if it's the same day AND we have a valid schedule
+                    if (savedDate === today && scheduleData && scheduleData.length > 0) {
+                        const savedCompletions = localStorage.getItem('completed_schedule_items');
+                        if (savedCompletions) {
+                            try {
+                                const savedIndices = JSON.parse(savedCompletions);
+
+                                // Create a hash of current schedule for validation
+                                const currentScheduleHash = scheduleData.map(item =>
+                                    `${item.task_id}_${item.session_info?.session_num || 0}`
+                                ).join(',');
+
+                                const savedScheduleHash = localStorage.getItem('schedule_hash');
+
+                                // Only restore if schedule hasn't changed significantly
+                                if (savedScheduleHash === currentScheduleHash) {
+                                    // Only restore indices that are still valid for current schedule
+                                    const validIndices = savedIndices.filter(idx =>
+                                        idx < scheduleData.length && scheduleData[idx] != null
+                                    );
+                                    setCompletedScheduleItems(new Set(validIndices));
+
+                                    // Update localStorage with only valid indices
+                                    if (validIndices.length !== savedIndices.length) {
+                                        localStorage.setItem('completed_schedule_items', JSON.stringify(validIndices));
+                                    }
+                                } else {
+                                    // Schedule changed - clear old completions
+                                    console.log('Schedule changed, clearing old completions');
+                                    localStorage.removeItem('completed_schedule_items');
+                                    localStorage.setItem('schedule_hash', currentScheduleHash);
+                                    setCompletedScheduleItems(new Set());
+                                }
+                            } catch (e) {
+                                // Invalid data - clear it
+                                console.error('Error parsing saved completions:', e);
+                                localStorage.removeItem('completed_schedule_items');
+                                setCompletedScheduleItems(new Set());
+                            }
+                        } else {
+                            // No saved completions - save current hash
+                            const currentScheduleHash = scheduleData.map(item =>
+                                `${item.task_id}_${item.session_info?.session_num || 0}`
+                            ).join(',');
+                            localStorage.setItem('schedule_hash', currentScheduleHash);
+                        }
+                    } else if (savedDate !== today) {
+                        // New day - clear old data
+                        localStorage.setItem('schedule_date', today);
+                        localStorage.removeItem('completed_schedule_items');
+                        localStorage.removeItem('schedule_hash');
+                        setCompletedScheduleItems(new Set());
+                    } else {
+                        // Same day but no schedule or empty - clear completions
+                        setCompletedScheduleItems(new Set());
+                    }
+                } catch (err) {
+                    console.error("Auto-schedule failed:", err);
+                    // Silently fail - user can manually trigger if needed
+                }
+            }
+        };
+
+        // Only auto-generate if we have tasks and are on the tasks tab
+        if (activeTab === 'tasks') {
+            autoGenerateSchedule();
+        }
+    }, [tasks, userId, activeTab]); // Re-run when tasks change
 
     const handleAddTask = async (e) => {
         e.preventDefault();
@@ -106,11 +188,123 @@ const Dashboard = ({ userId, onLogout }) => {
         try {
             const scheduleData = await generateSchedule(userId);
             setSchedule(scheduleData || []);
+            // Clear completed items when manually regenerating schedule
+            setCompletedScheduleItems(new Set());
+            localStorage.removeItem('completed_schedule_items');
         } catch (err) {
             setError("Failed to generate schedule.");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleToggleScheduleItem = async (index) => {
+        const scheduledTask = schedule[index];
+        if (!scheduledTask) return;
+
+        setCompletedScheduleItems(prev => {
+            const newSet = new Set(prev);
+            const wasCompleted = newSet.has(index);
+
+            if (wasCompleted) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+                // Award points for completing a scheduled task
+                setUserStats(prevStats => ({
+                    ...prevStats,
+                    points: prevStats.points + 10
+                }));
+            }
+
+            // Save to localStorage for persistence
+            localStorage.setItem('completed_schedule_items', JSON.stringify([...newSet]));
+            localStorage.setItem('schedule_date', new Date().toDateString());
+            // Save schedule hash for validation
+            const currentScheduleHash = schedule.map(item =>
+                `${item.task_id}_${item.session_info?.session_num || 0}`
+            ).join(',');
+            localStorage.setItem('schedule_hash', currentScheduleHash);
+
+            // Always update progress (for both check and uncheck)
+            const taskId = scheduledTask.task_id;
+
+            // Find all schedule items for this task IN TODAY'S SCHEDULE
+            const taskScheduleItems = schedule
+                .map((item, idx) => ({ item, idx }))
+                .filter(({ item }) => item.task_id === taskId);
+
+            // Count completed sessions AFTER this toggle (only from today's schedule)
+            const completedSessionsToday = taskScheduleItems.filter(({ idx }) =>
+                newSet.has(idx)
+            ).length;
+
+            // Get total sessions and count properly
+            let totalSessions = taskScheduleItems.length;
+            let completedSessions = completedSessionsToday;
+
+            if (scheduledTask.session_info && scheduledTask.session_info.total_sessions) {
+                // Multi-session task - use total_sessions from session_info
+                totalSessions = scheduledTask.session_info.total_sessions;
+
+                // Count how many unique session numbers are checked in today's schedule
+                const checkedSessionNumbers = new Set(
+                    taskScheduleItems
+                        .filter(({ idx }) => newSet.has(idx))
+                        .map(({ item }) => item.session_info?.session_num)
+                        .filter(Boolean)
+                );
+
+                // The number of unique sessions checked is our completed count
+                completedSessions = checkedSessionNumbers.size;
+            }
+
+            // Calculate progress percentage
+            const progressPercentage = Math.round((completedSessions / totalSessions) * 100);
+
+            // Update task progress in UI immediately
+            setTasks(currentTasks =>
+                currentTasks.map(t =>
+                    t.id === taskId
+                        ? { ...t, progress: progressPercentage }
+                        : t
+                )
+            );
+
+            // Always update progress in backend (for both check and uncheck)
+            updateTaskProgress(taskId, progressPercentage).catch(err =>
+                console.error('Failed to update progress:', err)
+            );
+
+            // Check if all sessions are now completed
+            const allSessionsCompleted = completedSessions === totalSessions;
+
+            // Only mark as complete when checking (not unchecking)
+            if (!wasCompleted) {
+                // If this task has session info and all sessions are done, mark task as completed
+                if (allSessionsCompleted && scheduledTask.session_info) {
+                    const { session_num, total_sessions } = scheduledTask.session_info;
+                    // Only mark complete if this was the last session
+                    if (session_num === total_sessions) {
+                        // Immediately remove from UI
+                        setTasks(currentTasks =>
+                            currentTasks.filter(t => t.id !== taskId)
+                        );
+                        // Mark task as completed in backend
+                        handleCompleteTask(taskId);
+                    }
+                } else if (allSessionsCompleted && !scheduledTask.session_info) {
+                    // Single session task - mark as complete immediately
+                    setTasks(currentTasks =>
+                        currentTasks.filter(t => t.id !== taskId)
+                    );
+                    // Update backend
+                    handleCompleteTask(taskId);
+                }
+            }
+
+            return newSet;
+        });
     };
 
     return (
@@ -120,7 +314,7 @@ const Dashboard = ({ userId, onLogout }) => {
                     <div className="relative">
                         <h1 className="text-5xl bg-clip-text text-transparent bg-gradient-to-r 
                from-cyan-300 via-purple-300 to-pink-300">
-                                StudySync
+                            StudySync
                         </h1>
 
                         <p className="text-gray-600 dark:text-gray-300 mt-2 font-medium">Sync your success, one task at a time!</p>
@@ -343,9 +537,10 @@ const Dashboard = ({ userId, onLogout }) => {
                                         onClick={handleGenerateSchedule}
                                         disabled={loading}
                                         className="flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900 px-4 py-2 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors disabled:opacity-50"
+                                        title="Regenerate today's schedule"
                                     >
                                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} />}
-                                        Auto-Schedule
+                                        Refresh Schedule
                                     </button>
                                 </div>
 
@@ -354,31 +549,74 @@ const Dashboard = ({ userId, onLogout }) => {
                                         <div className="absolute left-[4.5rem] top-4 bottom-4 w-0.5 bg-gray-200 dark:bg-gray-600 hidden md:block"></div>
                                     )}
 
-                                    {schedule.map((item, idx) => (
-                                        <div key={idx} className="relative flex flex-col md:flex-row gap-6 group">
-                                            <div className="md:w-16 text-right pt-4">
-                                                <span className="text-sm font-mono font-bold text-gray-500 dark:text-gray-400">{item.start}</span>
-                                            </div>
+                                    {schedule.map((item, idx) => {
+                                        const isCompleted = completedScheduleItems.has(idx);
+                                        return (
+                                            <div key={idx} className="relative flex flex-col md:flex-row gap-6 group">
+                                                <div className="md:w-16 text-right pt-4">
+                                                    <span className={`text-sm font-mono font-bold transition-all ${isCompleted ? 'text-gray-300 dark:text-gray-600 line-through' : 'text-gray-500 dark:text-gray-400'
+                                                        }`}>{item.start}</span>
+                                                </div>
 
-                                            <div className="absolute left-[4.2rem] top-5 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10"></div>
+                                                <div className={`absolute left-[4.2rem] top-5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10 transition-all ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'
+                                                    }`}></div>
 
-                                            <div className="flex-1 mb-6">
-                                                <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm hover:shadow-md transition-all">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{item.title}</h3>
-                                                            <p className="text-indigo-600 dark:text-indigo-400 text-sm font-medium mt-1 flex items-center gap-1">
-                                                                <Clock size={14} /> {item.duration} minutes
-                                                            </p>
+                                                <div className="flex-1 mb-6">
+                                                    <div className={`bg-gradient-to-br p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${isCompleted
+                                                        ? 'from-emerald-50 to-white dark:from-emerald-900 dark:to-gray-800 border-emerald-100 dark:border-emerald-800 opacity-60'
+                                                        : 'from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 border-indigo-100 dark:border-indigo-800'
+                                                        }`}>
+                                                        <div className="flex justify-between items-start gap-4">
+                                                            <div className="flex items-start gap-3 flex-1">
+                                                                {/* Checkbox */}
+                                                                <button
+                                                                    onClick={() => handleToggleScheduleItem(idx)}
+                                                                    className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 ${isCompleted
+                                                                        ? 'bg-emerald-500 border-emerald-500'
+                                                                        : 'border-gray-300 dark:border-gray-600 hover:border-indigo-500'
+                                                                        }`}
+                                                                    title={isCompleted ? 'Mark as not done' : 'Mark as done'}
+                                                                >
+                                                                    {isCompleted && (
+                                                                        <CheckCircle className="text-white" size={18} />
+                                                                    )}
+                                                                </button>
+
+                                                                <div className="flex-1">
+                                                                    <h3 className={`text-lg font-bold transition-all ${isCompleted
+                                                                        ? 'text-gray-400 dark:text-gray-500 line-through'
+                                                                        : 'text-gray-800 dark:text-gray-100'
+                                                                        }`}>{item.title}</h3>
+                                                                    <p className={`text-sm font-medium mt-1 flex items-center gap-1 transition-all ${isCompleted
+                                                                        ? 'text-gray-400 dark:text-gray-600'
+                                                                        : 'text-indigo-600 dark:text-indigo-400'
+                                                                        }`}>
+                                                                        <Clock size={14} /> {item.duration} minutes
+                                                                    </p>
+                                                                    {item.session_info && item.session_info.is_multi_session && (
+                                                                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                                                            Session {item.session_info.session_num} of {item.session_info.total_sessions}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className={`text-right text-xs transition-all ${isCompleted ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400'
+                                                                }`}>
+                                                                Ends at {item.end}
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right text-xs text-gray-400">
-                                                            Ends at {item.end}
-                                                        </div>
+                                                        {isCompleted && (
+                                                            <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-800">
+                                                                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                                    <CheckCircle size={12} /> Task completed! +10 points
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {schedule.length === 0 && !loading && (
                                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">

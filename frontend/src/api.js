@@ -37,6 +37,11 @@ export const updateTaskStatus = async (taskId, status) => {
     return response.data;
 };
 
+export const updateTaskProgress = async (taskId, progress) => {
+    const response = await axios.put(`${API_BASE}/tasks/${taskId}/progress`, { progress });
+    return response.data;
+};
+
 export const generateSchedule = async (userId) => {
     const response = await axios.post(`${API_BASE}/schedule/generate`, { userId });
     return response.data;
