@@ -98,6 +98,28 @@ router.put('/:taskId/status', async (req, res) => {
                  VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
                 [task.user_id, task.id, task.title, task.category, task.priority, 'Completed', actualTime]
             );
+
+            // Trigger ML training asynchronously
+            if (actualTime) {
+                (async () => {
+                    try {
+                        const historyResult = await db.query(`
+                            SELECT th.task_id, th.actual_time, t.category, t.estimated_size, t.complexity, t.num_pages, t.num_slides, t.num_questions, t.manual_time
+                            FROM task_history th
+                            JOIN tasks t ON th.task_id = t.id
+                            WHERE th.user_id = $1 AND th.completed_at IS NOT NULL AND (th.actual_time > 0 OR t.manual_time > 0)
+                            ORDER BY th.completed_at DESC LIMIT 50
+                        `, [task.user_id]);
+
+                        if (historyResult.rows.length >= 3) {
+                            console.log(`[ML] Triggering auto-training for user ${task.user_id}`);
+                            await mlClient.trainModel(task.user_id, historyResult.rows);
+                        }
+                    } catch (mlErr) {
+                        console.error('[ML] Auto-training failed:', mlErr);
+                    }
+                })();
+            }
         }
 
         res.json(result.rows[0]);
