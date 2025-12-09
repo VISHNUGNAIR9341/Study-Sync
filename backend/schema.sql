@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS task_history (
     category TEXT NOT NULL,
     priority TEXT,
     status TEXT NOT NULL,
+    actual_time INT,
     completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

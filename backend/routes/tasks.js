@@ -92,10 +92,11 @@ router.put('/:taskId/status', async (req, res) => {
             await db.query('UPDATE users SET points = points + $1 WHERE id = $2', [points, task.user_id]);
 
             // Add to task history
+            const actualTime = req.body.actual_time || null;
             await db.query(
-                `INSERT INTO task_history (user_id, task_id, title, category, priority, status, completed_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-                [task.user_id, task.id, task.title, task.category, task.priority, 'Completed']
+                `INSERT INTO task_history (user_id, task_id, title, category, priority, status, actual_time, completed_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+                [task.user_id, task.id, task.title, task.category, task.priority, 'Completed', actualTime]
             );
         }
 

@@ -15,6 +15,7 @@ import UserProfile from '../components/UserProfile';
 import WellnessDashboard from '../components/WellnessDashboard';
 import BackupManager from '../components/BackupManager';
 import DatabaseViewer from '../components/DatabaseViewer';
+import TaskCompletionModal from '../components/TaskCompletionModal';
 
 const Dashboard = ({ userId, onLogout }) => {
     const [tasks, setTasks] = useState([]);
@@ -29,6 +30,12 @@ const Dashboard = ({ userId, onLogout }) => {
     const [newTask, setNewTask] = useState({
         title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
         complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+    });
+    const [completionModal, setCompletionModal] = useState({
+        isOpen: false,
+        taskId: null,
+        taskTitle: '',
+        estimatedTime: 0
     });
 
     const loadData = async () => {
@@ -171,10 +178,10 @@ const Dashboard = ({ userId, onLogout }) => {
         }
     };
 
-    const handleCompleteTask = async (taskId) => {
+    const handleCompleteTask = async (taskId, actualTime = null) => {
         setLoading(true);
         try {
-            await updateTaskStatus(taskId, 'Completed');
+            await updateTaskStatus(taskId, 'Completed', actualTime);
             await loadData();
         } catch (err) {
             setError("Failed to complete task.");
@@ -196,6 +203,19 @@ const Dashboard = ({ userId, onLogout }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+
+    const handleModalSubmit = (actualTime) => {
+        const { taskId } = completionModal;
+        if (taskId) {
+            // Immediately remove from UI
+            setTasks(currentTasks =>
+                currentTasks.filter(t => t.id !== taskId)
+            );
+            handleCompleteTask(taskId, actualTime);
+        }
+        setCompletionModal({ isOpen: false, taskId: null, taskTitle: '', estimatedTime: 0 });
     };
 
     const handleToggleScheduleItem = async (index) => {
@@ -286,20 +306,30 @@ const Dashboard = ({ userId, onLogout }) => {
                     const { session_num, total_sessions } = scheduledTask.session_info;
                     // Only mark complete if this was the last session
                     if (session_num === total_sessions) {
-                        // Immediately remove from UI
-                        setTasks(currentTasks =>
-                            currentTasks.filter(t => t.id !== taskId)
-                        );
-                        // Mark task as completed in backend
-                        handleCompleteTask(taskId);
+                        // Find task to get estimated time
+                        const task = tasks.find(t => t.id === taskId);
+                        const estimatedTime = task ? (task.manual_time || task.ml_predicted_time || task.default_expected_time) : 0;
+
+                        // Open completion modal instead of prompt
+                        setCompletionModal({
+                            isOpen: true,
+                            taskId: taskId,
+                            taskTitle: task ? task.title : 'Task',
+                            estimatedTime: estimatedTime
+                        });
                     }
                 } else if (allSessionsCompleted && !scheduledTask.session_info) {
-                    // Single session task - mark as complete immediately
-                    setTasks(currentTasks =>
-                        currentTasks.filter(t => t.id !== taskId)
-                    );
-                    // Update backend
-                    handleCompleteTask(taskId);
+                    // Find task to get estimated time
+                    const task = tasks.find(t => t.id === taskId);
+                    const estimatedTime = task ? (task.manual_time || task.ml_predicted_time || task.default_expected_time) : 0;
+
+                    // Open completion modal instead of prompt
+                    setCompletionModal({
+                        isOpen: true,
+                        taskId: taskId,
+                        taskTitle: task ? task.title : 'Task',
+                        estimatedTime: estimatedTime
+                    });
                 }
             }
 
@@ -783,6 +813,15 @@ const Dashboard = ({ userId, onLogout }) => {
                 {showDatabaseViewer && (
                     <DatabaseViewer onClose={() => setShowDatabaseViewer(false)} />
                 )}
+
+                {/* Task Completion Modal */}
+                <TaskCompletionModal
+                    isOpen={completionModal.isOpen}
+                    onClose={() => setCompletionModal({ ...completionModal, isOpen: false })}
+                    onSubmit={handleModalSubmit}
+                    taskTitle={completionModal.taskTitle}
+                    estimatedTime={completionModal.estimatedTime}
+                />
             </div>
         </div>
     );

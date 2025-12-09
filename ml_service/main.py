@@ -48,25 +48,43 @@ def read_root():
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_time(task: TaskInput):
-    # Logic:
-    # 1. Load user history (mocked for now, in real app would query DB or receive history)
-    # 2. Calculate weighted average speed
-    
-    default_speeds = { # mins per unit
-        "writing": 20, 
-        "reading": 5,
-        "problem_solving": 10,
-        "project": 60,
-        "revision": 10
-    }
-    
-    base_speed = default_speeds.get(task.category.lower(), 15)
-    
-    # Mock user adjustment (random variance for demo)
-    user_factor = 0.9 # User is 10% faster than average
-    
-    predicted = int(base_speed * task.size * user_factor)
-    return {"predicted_time": predicted, "confidence": 0.85}
+    """
+    Predict task completion time using improved ML model
+    The model learns from user's historical task completion data
+    """
+    try:
+        from improved_predictor import ImprovedTimePredictor
+        
+        # Create user-specific predictor
+        predictor = ImprovedTimePredictor(task.user_id)
+        
+        # Convert task to dict format
+        task_dict = {
+            'category': task.category,
+            'estimated_size': task.size,
+            'complexity': 'Medium',  # Default, will be overridden if provided
+        }
+        
+        # Make prediction
+        predicted_time, confidence = predictor.predict(task_dict)
+        
+        return {
+            "predicted_time": predicted_time,
+            "confidence": confidence
+        }
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        # Fallback to simple estimation
+        default_speeds = {
+            "writing": 20,
+            "reading": 5,
+            "problem_solving": 10,
+            "project": 60,
+            "revision": 10
+        }
+        base_speed = default_speeds.get(task.category.lower(), 15)
+        predicted = int(base_speed * task.size)
+        return {"predicted_time": predicted, "confidence": 0.50}
 
 def time_conflicts_with_routine(start_time: datetime, end_time: datetime, routine_blocks: List[RoutineBlock]) -> bool:
     """Check if a time slot conflicts with any routine block"""
