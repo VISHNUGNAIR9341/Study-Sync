@@ -89,9 +89,8 @@ def get_free_slots(wake_up_str, sleep_str, routine_blocks):
 
 def break_task_into_sessions(task):
     """
-    Break a task into optimal study sessions based on educational psychology research.
-    - Sessions of 20-45 minutes are ideal for retention
-    - Distribute work across days when deadline allows
+    Break a task into sessions - one session per day until deadline.
+    Distributes work evenly across all available days.
     """
     duration = task.get('predicted_time', 30)
     deadline_str = task.get('deadline')
@@ -99,11 +98,38 @@ def break_task_into_sessions(task):
     # Calculate days until deadline
     if deadline_str:
         try:
-            task_deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+            import math
+            
+            # Parse deadline - try ISO format and common formats
+            task_deadline = None
+            
+            # Try ISO format first (most common from frontend)
+            try:
+                task_deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+            except:
+                pass
+            
+            # Try parsing YYYY-MM-DD format
+            if not task_deadline:
+                try:
+                    task_deadline = datetime.strptime(deadline_str.split('T')[0], '%Y-%m-%d')
+                except:
+                    pass
+            
+            if not task_deadline:
+                raise ValueError(f"Could not parse deadline: {deadline_str}")
+            
             now = datetime.now()
-            days_available = max(1, (task_deadline - now).days + 1)
-        except:
-            days_available = min(7, max(3, duration // 30))
+            
+            # Match frontend: Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
+            time_difference_seconds = (task_deadline - now).total_seconds()
+            days_available = max(1, math.ceil(time_difference_seconds / 86400))
+            
+            print(f"DEBUG: Deadline={deadline_str}, Days={days_available}", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"ERROR parsing deadline '{deadline_str}': {e}", file=sys.stderr, flush=True)
+            # Default to 2 days if parsing fails
+            days_available = 2
     else:
         # Default to spreading over 3-7 days based on task length
         days_available = min(7, max(3, duration // 30))
@@ -119,12 +145,9 @@ def break_task_into_sessions(task):
             "total_sessions": 1
         })
     else:
-        # Long task - break into chunks
-        # Optimal session length: 20-45 minutes
-        optimal_session_length = 30
+        # Divide by days - one session per day
+        num_sessions = max(2, days_available)
         
-        # Calculate number of sessions needed
-        num_sessions = max(2, min(days_available, (duration + optimal_session_length - 1) // optimal_session_length))
         minutes_per_session = duration // num_sessions
         remaining_minutes = duration % num_sessions
         
@@ -172,6 +195,9 @@ def schedule():
         )
         
         schedule_list = []
+        
+        print(f"DEBUG: Received {len(sorted_tasks)} tasks to schedule", file=sys.stderr, flush=True)
+        print(f"DEBUG: Available free slots: {len(free_slots)}", file=sys.stderr, flush=True)
         
         # Schedule tasks in free slots
         for task in sorted_tasks:

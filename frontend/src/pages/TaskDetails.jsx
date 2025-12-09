@@ -71,34 +71,43 @@ const TaskDetails = () => {
     }, [taskId]);
 
     const generateLongTermPlan = (task) => {
-        // Simple logic to distribute work
-        // Assume we can work 2 hours a day on this task
+        // Divide task evenly across days until deadline
         const totalMinutes = task.manual_time || task.ml_predicted_time || task.default_expected_time || 60;
-        const deadline = task.deadline ? new Date(task.deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+        const deadline = task.deadline ? new Date(task.deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const now = new Date();
 
         const daysUntilDeadline = Math.max(1, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
-        const minutesPerDay = Math.ceil(totalMinutes / daysUntilDeadline);
+
+        // Divide by days - one session per day
+        let numSessions;
+        if (totalMinutes <= 45) {
+            numSessions = 1;
+        } else {
+            // One session per day until deadline
+            numSessions = Math.max(2, daysUntilDeadline);
+        }
+
+        const minutesPerSession = Math.floor(totalMinutes / numSessions);
+        const remainingMinutes = totalMinutes % numSessions;
 
         const plan = [];
-        let remainingMinutes = totalMinutes;
 
-        for (let i = 0; i < daysUntilDeadline; i++) {
-            if (remainingMinutes <= 0) break;
-
+        for (let i = 0; i < numSessions; i++) {
             const date = new Date();
             date.setDate(date.getDate() + i);
 
-            const sessionDuration = Math.min(remainingMinutes, minutesPerDay); // Cap at calculated daily need
+            // Distribute remaining minutes to early sessions
+            const sessionDuration = minutesPerSession + (i < remainingMinutes ? 1 : 0);
 
             plan.push({
                 date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
                 duration: sessionDuration,
-                focus: `Part ${i + 1}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`
+                focus: `Part ${i + 1}/${numSessions}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`,
+                sessionNum: i + 1,
+                totalSessions: numSessions
             });
-
-            remainingMinutes -= sessionDuration;
         }
+
         setSchedule(plan);
     };
 
