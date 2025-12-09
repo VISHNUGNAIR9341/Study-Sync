@@ -95,6 +95,8 @@ def break_task_into_sessions(task):
     duration = task.get('predicted_time', 30)
     deadline_str = task.get('deadline')
     
+    print(f"DEBUG: Task '{task.get('title')}', deadline_str='{deadline_str}'", file=sys.stderr, flush=True)
+    
     # Calculate days until deadline
     if deadline_str:
         try:
@@ -119,7 +121,13 @@ def break_task_into_sessions(task):
             if not task_deadline:
                 raise ValueError(f"Could not parse deadline: {deadline_str}")
             
+            # Make both timezone-naive for comparison
+            if task_deadline.tzinfo is not None:
+                task_deadline = task_deadline.replace(tzinfo=None)
+            
             now = datetime.now()
+            if now.tzinfo is not None:
+                now = now.replace(tzinfo=None)
             
             # Match frontend: Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
             time_difference_seconds = (task_deadline - now).total_seconds()
