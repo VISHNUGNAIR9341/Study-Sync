@@ -47,62 +47,62 @@ const Login = ({ setUserId }) => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
-            <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4">
+            <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
                 <div className="p-8">
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 mb-2">
+                        <h1 className="text-3xl font-bold text-gray-100 mb-2">
                             StudySync
                         </h1>
-                        <p className="text-gray-300 font-medium">
+                        <p className="text-gray-400 font-medium">
                             {isRegistering ? 'Create your account' : 'Welcome back, Student!'}
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {isRegistering && (
-                            <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-purple-400 transition-colors" size={20} />
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                 <input
                                     type="text"
                                     name="name"
                                     placeholder="Full Name"
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="w-full bg-black/20 border border-gray-600 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-gray-500"
+                                    className="w-full bg-gray-700 border border-gray-600 text-gray-100 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 placeholder-gray-400"
                                     required
                                 />
                             </div>
                         )}
 
-                        <div className="relative group">
-                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-purple-400 transition-colors" size={20} />
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                             <input
                                 type="text"
                                 name="student_id"
                                 placeholder="Student ID"
                                 value={formData.student_id}
                                 onChange={handleChange}
-                                className="w-full bg-black/20 border border-gray-600 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-gray-500"
+                                className="w-full bg-gray-700 border border-gray-600 text-gray-100 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 placeholder-gray-400"
                                 required
                             />
                         </div>
 
-                        <div className="relative group">
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-purple-400 transition-colors" size={20} />
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                             <input
                                 type="password"
                                 name="password"
                                 placeholder="Password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="w-full bg-black/20 border border-gray-600 text-white rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-gray-500"
+                                className="w-full bg-gray-700 border border-gray-600 text-gray-100 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 placeholder-gray-400"
                                 required
                             />
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm text-center animate-pulse">
+                            <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm text-center">
                                 {error}
                             </div>
                         )}
@@ -110,7 +110,7 @@ const Login = ({ setUserId }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-purple-500/30 transform hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full bg-gray-700 hover:bg-gray-600 text-gray-100 font-bold py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <span className="animate-spin">⏳</span>
@@ -126,7 +126,7 @@ const Login = ({ setUserId }) => {
                     <div className="mt-6 text-center">
                         <button
                             onClick={() => setIsRegistering(!isRegistering)}
-                            className="text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2 mx-auto"
+                            className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-medium flex items-center justify-center gap-2 mx-auto"
                         >
                             {isRegistering ? (
                                 <>
