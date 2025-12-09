@@ -72,6 +72,16 @@ const RoutineBuilder = ({ userId }) => {
         return ACTIVITY_TYPES.find(a => a.value === type) || ACTIVITY_TYPES[ACTIVITY_TYPES.length - 1];
     };
 
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours, 10);
+        const m = parseInt(minutes, 10);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+    };
+
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-6">
@@ -163,7 +173,7 @@ const RoutineBuilder = ({ userId }) => {
                                     <div>
                                         <h3 className="font-semibold">{config.label}</h3>
                                         <p className="text-sm opacity-75">
-                                            {block.start_time} - {block.end_time}
+                                            {formatTime(block.start_time)} - {formatTime(block.end_time)}
                                         </p>
                                     </div>
                                 </div>

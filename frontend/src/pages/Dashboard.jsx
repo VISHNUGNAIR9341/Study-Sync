@@ -120,8 +120,8 @@ const Dashboard = ({ userId, onLogout }) => {
                     <div className="relative">
                         <h1 className="text-5xl bg-clip-text text-transparent bg-gradient-to-r 
                from-cyan-300 via-purple-300 to-pink-300">
-  StudySync
-</h1>
+                                StudySync
+                        </h1>
 
                         <p className="text-gray-600 dark:text-gray-300 mt-2 font-medium">Sync your success, one task at a time!</p>
                     </div>
@@ -133,14 +133,14 @@ const Dashboard = ({ userId, onLogout }) => {
                             <span className="font-black text-white">{userStats.points} pts</span>
                         </div>
                         <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 rounded-full shadow-lg transform hover:scale-110 transition-all">
-                            <Flame className="text-white animate-bounce" size={22} />
+                            <Flame className="text-white" size={22} />
                             <span className="font-black text-white">{userStats.streak} day streak</span>
                         </div>
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-8 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-110 font-bold"
                         >
-                            <Plus size={22} className="animate-spin" /> New Task
+                            <Plus size={22} /> New Task
                         </button>
                         <button
                             onClick={onLogout}
@@ -292,7 +292,7 @@ const Dashboard = ({ userId, onLogout }) => {
                                                         {task.deadline && (
                                                             <p className="text-xs mt-1 text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
                                                                 <CalendarClock size={12} />
-                                                                Due: {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                Due: {new Date(task.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                                                             </p>
                                                         )}
                                                         {/* Progress Bar */}

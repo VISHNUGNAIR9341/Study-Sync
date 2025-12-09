@@ -114,7 +114,7 @@ const TaskDetails = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="text-indigo-500" size={18} />
-                                    <span>Due: {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No Deadline'}</span>
+                                    <span>Due: {task.deadline ? new Date(task.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'No Deadline'}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Layers className="text-indigo-500" size={18} />

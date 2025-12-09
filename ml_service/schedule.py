@@ -14,10 +14,20 @@ def time_to_minutes(time_obj):
     return time_obj.hour * 60 + time_obj.minute
 
 def minutes_to_time(minutes):
-    """Convert minutes since midnight to time string"""
+    """Convert minutes since midnight to time string (12-hour format)"""
     hours = minutes // 60
     mins = minutes % 60
-    return f"{hours:02d}:{mins:02d}"
+    
+    period = "AM"
+    if hours >= 12:
+        period = "PM"
+    
+    if hours > 12:
+        hours -= 12
+    elif hours == 0:
+        hours = 12
+        
+    return f"{hours:02d}:{mins:02d} {period}"
 
 def get_free_slots(wake_up_str, sleep_str, routine_blocks):
     """
