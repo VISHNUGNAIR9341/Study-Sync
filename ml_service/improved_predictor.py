@@ -9,6 +9,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 import pickle
 import os
+import pandas as pd
+
 
 class ImprovedTimePredictor:
     """
@@ -20,6 +22,11 @@ class ImprovedTimePredictor:
         self.model = LinearRegression()
         self.scaler = StandardScaler()
         self.is_trained = False
+        self.task_count = 0
+        
+        self.base_model = None
+        self.base_scaler = None
+        self.base_model_ready = False
         
         # Category encodings
         self.category_map = {
@@ -48,8 +55,83 @@ class ImprovedTimePredictor:
             'other': {'Low': 10, 'Medium': 15, 'High': 20}
         }
         
-        # Try to load existing model
+        # Ensure base model exists and load it
+        self.ensure_base_model()
+        
+        # Try to load existing user model
         self.load_model()
+
+    def ensure_base_model(self):
+        """Ensure base model exists (train from CSV if needed) and load it"""
+        model_dir = os.path.join(os.path.dirname(__file__), 'models')
+        base_model_path = os.path.join(model_dir, 'base_model.pkl')
+        csv_path = os.path.join(os.path.dirname(__file__), 'realistic_dataset_2000.csv')
+        
+        # If base model doesn't exist but CSV does, train it
+        if not os.path.exists(base_model_path) and os.path.exists(csv_path):
+            print("Training base model from realistic_dataset_2000.csv...")
+            self.train_base_model(csv_path, base_model_path)
+            
+        # Load base model
+        if os.path.exists(base_model_path):
+            try:
+                with open(base_model_path, 'rb') as f:
+                    data = pickle.load(f)
+                    self.base_model = data['model']
+                    self.base_scaler = data['scaler']
+                    self.base_model_ready = True
+                print("Loaded base model from realistic_dataset_2000.csv")
+            except Exception as e:
+                print(f"Failed to load base model: {e}")
+
+    def train_base_model(self, csv_path, save_path):
+        """Train a generic model using the synthetic training data"""
+        try:
+            df = pd.read_csv(csv_path)
+            
+            X = []
+            y = []
+            
+            for _, row in df.iterrows():
+                # Convert CSV row to task dict format expected by extract_features
+                task = {
+                    'category': row['category'],
+                    'complexity': row['complexity'],
+                    'estimated_size': float(row['estimated_size']),
+                    'num_pages': int(row.get('num_pages', 0)),
+                    'num_slides': int(row.get('num_slides', 0)),
+                    'num_questions': int(row.get('num_questions', 0))
+                }
+                
+                features = self.extract_features(task)
+                target = float(row['actual_time_minutes'])
+                
+                X.append(features)
+                y.append(target)
+            
+            X = np.array(X)
+            y = np.array(y)
+            
+            # Train model
+            base_model = LinearRegression()
+            base_scaler = StandardScaler()
+            
+            X_scaled = base_scaler.fit_transform(X)
+            base_model.fit(X_scaled, y)
+            
+            # Save
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'wb') as f:
+                pickle.dump({
+                    'model': base_model,
+                    'scaler': base_scaler
+                }, f)
+                
+            print(f"Base model trained on {len(X)} samples")
+            
+        except Exception as e:
+            print(f"Error training base model: {e}")
+
     
     def extract_features(self, task: Dict) -> np.array:
         """
@@ -110,6 +192,7 @@ class ImprovedTimePredictor:
         # Train model
         self.model.fit(X_scaled, y)
         self.is_trained = True
+        self.task_count = len(historical_tasks)
         
         # Save model
         self.save_model()
@@ -124,18 +207,34 @@ class ImprovedTimePredictor:
         """
         features = self.extract_features(task)
         
-        if self.is_trained:
-            # Use trained model
+        # Decide which model to use
+        # Use base model if user has < 30 tasks and base model is available
+        use_base_model = (self.task_count < 30) and self.base_model_ready
+        
+        if use_base_model:
+            # Use Base Model (trained on CSV)
+            X_scaled = self.base_scaler.transform([features])
+            predicted_time = self.base_model.predict(X_scaled)[0]
+            
+            # Ensure reasonable bounds
+            predicted_time = max(5, min(480, predicted_time))
+            confidence = 0.75 # Good confidence from base data
+            
+            return int(predicted_time), confidence
+            
+        elif self.is_trained:
+            # Use Personalized User Model
             X_scaled = self.scaler.transform([features])
             predicted_time = self.model.predict(X_scaled)[0]
             
-            # Ensure reasonable bounds (10 min to 480 min)
-            predicted_time = max(10, min(480, predicted_time))
+            # Ensure reasonable bounds
+            predicted_time = max(5, min(480, predicted_time))
             
-            confidence = 0.85  # Could calculate based on model metrics
+            confidence = 0.85 + (min(self.task_count, 100) / 1000) # Increasing confidence with more data
             return int(predicted_time), confidence
+            
         else:
-            # Fallback to rule-based estimation
+            # Fallback to rule-based estimation (only if base model failed to load)
             category = task.get('category', 'other').lower()
             complexity = task.get('complexity', 'Medium')
             size = task.get('estimated_size', 1.0)
@@ -158,7 +257,7 @@ class ImprovedTimePredictor:
             # Ensure reasonable bounds
             predicted_time = max(10, min(480, predicted_time))
             
-            confidence = 0.60  # Lower confidence without training
+            confidence = 0.60  # Lower confidence
             return int(predicted_time), confidence
     
     def save_model(self):
@@ -172,7 +271,8 @@ class ImprovedTimePredictor:
             pickle.dump({
                 'model': self.model,
                 'scaler': self.scaler,
-                'is_trained': self.is_trained
+                'is_trained': self.is_trained,
+                'task_count': self.task_count
             }, f)
     
     def load_model(self):
@@ -187,6 +287,7 @@ class ImprovedTimePredictor:
                     self.model = data['model']
                     self.scaler = data['scaler']
                     self.is_trained = data['is_trained']
+                    self.task_count = data.get('task_count', 0)
                 print(f"Loaded existing model for user {self.user_id}")
             except Exception as e:
                 print(f"Failed to load model: {e}")
