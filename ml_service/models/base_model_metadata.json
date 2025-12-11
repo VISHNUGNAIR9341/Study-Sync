@@ -3,35 +3,38 @@
     "estimated_size": 3.5,
     "title_length": 30.0,
     "user_experience_level": 3.0,
-    "num_pages": 0.0,
+    "num_pages": 6.0,
     "num_slides": 0.0,
-    "num_questions": 9.0
+    "num_questions": 1.0
   },
   "categories": {
     "category": [
-      "project",
-      "presentation",
-      "reading"
+      "Revision",
+      "Problems",
+      "Writing",
+      "Reading",
+      "Presentation",
+      "Project"
     ],
     "priority": [
       "Low",
-      "Medium",
-      "Urgent"
+      "Urgent",
+      "Medium"
     ],
     "time_of_day": [
-      "evening",
-      "morning",
       "night",
-      "afternoon"
+      "afternoon",
+      "morning",
+      "evening"
     ],
     "day_of_week": [
+      "Tuesday",
       "Monday",
       "Thursday",
-      "Tuesday",
-      "Wednesday",
       "Sunday",
-      "Saturday",
-      "Friday"
+      "Wednesday",
+      "Friday",
+      "Saturday"
     ],
     "complexity": [
       "Medium",
