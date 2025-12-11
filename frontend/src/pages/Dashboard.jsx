@@ -343,7 +343,7 @@ const Dashboard = ({ userId, onLogout }) => {
                 <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <div className="relative">
                         <h1 className="text-5xl bg-clip-text text-transparent bg-gradient-to-r 
-               from-cyan-300 via-purple-300 to-pink-300">
+               from-gray-400 via-gray-500 to-gray-600">
                             StudySync
                         </h1>
 
