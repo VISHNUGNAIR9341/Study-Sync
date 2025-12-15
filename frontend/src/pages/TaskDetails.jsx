@@ -70,6 +70,13 @@ const TaskDetails = () => {
         loadData();
     }, [taskId]);
 
+    // Re-generate long term plan when dailyPlan changes to ensure sync
+    useEffect(() => {
+        if (task) {
+            generateLongTermPlan(task);
+        }
+    }, [dailyPlan, task]);
+
     const generateLongTermPlan = (task) => {
         // Divide task evenly across days until deadline
         const totalMinutes = task.manual_time || task.ml_predicted_time || task.default_expected_time || 60;
@@ -77,6 +84,10 @@ const TaskDetails = () => {
         const now = new Date();
 
         const daysUntilDeadline = Math.max(1, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
+
+        // Calculate daily allocation similar to backend
+        // We want to distribute remaining work evenly
+        const minutesPerDay = Math.ceil(totalMinutes / daysUntilDeadline);
 
         // Divide by days - one session per day
         let numSessions;
@@ -90,21 +101,41 @@ const TaskDetails = () => {
         const minutesPerSession = Math.floor(totalMinutes / numSessions);
         const remainingMinutes = totalMinutes % numSessions;
 
-        const plan = [];
+        // Check if we have scheduled sessions for today in dailyPlan
+        // Note: dailyPlan is fetched in useEffect
+        // We need to pass dailyPlan to this function or use state. 
+        // Since state updates are async, we might need to call this inside useEffect or pass data.
+        // Let's assume we call this after dailyPlan is set, or re-run this when dailyPlan changes.
+
+        // Actually, let's just build the plan normally, then override the first day if we have real data.
+
+        for (let i = 0; i < daysUntilDeadline; i++) {
+            if (remainingMinutes <= 0) break;
 
         for (let i = 0; i < numSessions; i++) {
             const date = new Date();
             date.setDate(date.getDate() + i);
+            const dateString = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-            // Distribute remaining minutes to early sessions
-            const sessionDuration = minutesPerSession + (i < remainingMinutes ? 1 : 0);
+            let sessionDuration = Math.min(remainingMinutes, minutesPerDay); // Cap at calculated daily need
+            let focus = `Part ${i + 1}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`;
+
+            // Override for Today if we have real schedule data
+            if (i === 0 && dailyPlan.length > 0) {
+                const todaySessions = dailyPlan.filter(item => item.title === task.title);
+                if (todaySessions.length > 0) {
+                    const totalScheduledToday = todaySessions.reduce((acc, curr) => acc + curr.duration, 0);
+                    if (totalScheduledToday > 0) {
+                        sessionDuration = totalScheduledToday;
+                        focus = `Scheduled Today: ${todaySessions.map(s => `${s.start}-${s.end}`).join(', ')}`;
+                    }
+                }
+            }
 
             plan.push({
-                date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                date: dateString,
                 duration: sessionDuration,
-                focus: `Part ${i + 1}/${numSessions}: ${Math.round((sessionDuration / totalMinutes) * 100)}% of task`,
-                sessionNum: i + 1,
-                totalSessions: numSessions
+                focus: focus
             });
         }
 
@@ -219,7 +250,7 @@ const TaskDetails = () => {
     if (!task) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 transition-colors duration-200 font-sans">
             <div className="max-w-5xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}
@@ -229,7 +260,7 @@ const TaskDetails = () => {
                 </button>
 
                 {/* Task Header Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-gray-700 mb-8">
                     <div className="flex justify-between items-start">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -243,7 +274,7 @@ const TaskDetails = () => {
                                     {task.category}
                                 </span>
                             </div>
-                            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{task.title}</h1>
+                            <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-4">{task.title}</h1>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="flex items-center gap-2">
@@ -413,9 +444,9 @@ const TaskDetails = () => {
                             )}
                         </div>
 
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
+                        <div className="bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl p-6 text-indigo-900 dark:text-indigo-100 shadow-sm border border-indigo-200 dark:border-indigo-800">
                             <h3 className="font-bold text-lg mb-2">Study Tip</h3>
-                            <p className="text-indigo-100 text-sm">
+                            <p className="text-indigo-800 dark:text-indigo-200 text-sm">
                                 Breaking down "{task.title}" into {schedule.length} smaller sessions will improve retention by 40% compared to doing it all at once!
                             </p>
                         </div>

@@ -111,15 +111,15 @@ const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
     }, [enabled, settings.dailySummary, settings.summaryTime, tasks]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl">
-                        <Bell className="text-white" size={24} />
+                    <div className="p-3 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
+                        <Bell className="text-violet-600 dark:text-violet-400" size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Smart Reminders</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Never miss a deadline or study session</p>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Smart Reminders</h2>
+                        <p className="text-sm text-slate-500 dark:text-gray-400">Never miss a deadline or study session</p>
                     </div>
                 </div>
 
@@ -131,7 +131,7 @@ const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
                 ) : (
                     <button
                         onClick={handleEnableNotifications}
-                        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
+                        className="flex items-center gap-2 bg-violet-200 text-violet-900 px-4 py-2 rounded-lg hover:bg-violet-300 transition-all font-medium"
                     >
                         <Bell size={18} />
                         Enable Notifications
@@ -142,7 +142,7 @@ const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
             {permission === 'granted' && (
                 <div className="space-y-4">
                     {/* Task Reminders */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-gray-700 rounded-xl">
                         <div className="flex items-center gap-3">
                             <Calendar className="text-blue-500" size={20} />
                             <div>
@@ -162,7 +162,7 @@ const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
                     </div>
 
                     {/* Streak Reminders */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-gray-700 rounded-xl">
                         <div className="flex items-center gap-3">
                             <Flame className="text-orange-500" size={20} />
                             <div>
@@ -182,7 +182,7 @@ const SmartReminders = ({ tasks = [], userStats = {}, userId }) => {
                     </div>
 
                     {/* Daily Summary */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-gray-700 rounded-xl">
                         <div className="flex items-center gap-3 flex-1">
                             <Clock className="text-purple-500" size={20} />
                             <div className="flex-1">

@@ -33,10 +33,6 @@ const BackupManager = ({ userId }) => {
     };
 
     const handleRestoreBackup = (backupKey) => {
-        if (!window.confirm('Are you sure you want to restore this backup? Current data will be overwritten.')) {
-            return;
-        }
-
         const success = storageManager.restoreBackup(backupKey);
         if (success) {
             showMessage('success', 'Backup restored successfully! Refreshing page...');
@@ -64,12 +60,8 @@ const BackupManager = ({ userId }) => {
             try {
                 const importData = JSON.parse(e.target.result);
 
-                if (!window.confirm('Import this backup? You can choose to merge with existing data or replace it.')) {
-                    return;
-                }
-
-                const merge = window.confirm('Click OK to merge with existing data, or Cancel to replace all data.');
-                const success = storageManager.importData(importData, merge);
+                // Default to merge for safety without confirmation
+                const success = storageManager.importData(importData, true);
 
                 if (success) {
                     showMessage('success', 'Data imported successfully! Refreshing page...');
@@ -113,14 +105,14 @@ const BackupManager = ({ userId }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl">
-                    <Database className="text-white" size={24} />
+                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                    <Database className="text-indigo-600 dark:text-indigo-400" size={24} />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Backup & Export</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Protect your data with backups</p>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100">Backup & Export</h2>
+                    <p className="text-sm text-slate-500 dark:text-gray-400">Protect your data with backups</p>
                 </div>
             </div>
 
@@ -139,7 +131,7 @@ const BackupManager = ({ userId }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                 <button
                     onClick={handleCreateBackup}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
+                    className="flex items-center justify-center gap-2 bg-indigo-200 text-indigo-900 px-4 py-3 rounded-lg hover:bg-indigo-300 transition-all font-medium"
                 >
                     <Save size={18} />
                     Create Backup
@@ -147,13 +139,13 @@ const BackupManager = ({ userId }) => {
 
                 <button
                     onClick={handleExportJSON}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
+                    className="flex items-center justify-center gap-2 bg-emerald-200 text-emerald-900 px-4 py-3 rounded-lg hover:bg-emerald-300 transition-all font-medium"
                 >
                     <Download size={18} />
                     Export JSON
                 </button>
 
-                <label className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium cursor-pointer">
+                <label className="flex items-center justify-center gap-2 bg-fuchsia-200 text-fuchsia-900 px-4 py-3 rounded-lg hover:bg-fuchsia-300 transition-all font-medium cursor-pointer">
                     <Upload size={18} />
                     Import JSON
                     <input
@@ -166,7 +158,7 @@ const BackupManager = ({ userId }) => {
             </div>
 
             {/* Auto-Backup Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl mb-6">
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-gray-700 rounded-xl mb-6">
                 <div>
                     <p className="font-medium text-gray-800 dark:text-gray-100">Auto-Backup</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Automatically create backups when you make changes</p>

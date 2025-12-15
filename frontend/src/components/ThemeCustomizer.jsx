@@ -25,7 +25,6 @@ const ThemeCustomizer = () => {
 
     const handleSaveCustomTheme = () => {
         if (!customName.trim()) {
-            alert('Please enter a theme name');
             return;
         }
         saveCustomTheme(customName, customColors);
@@ -63,8 +62,8 @@ const ThemeCustomizer = () => {
                             key={key}
                             onClick={() => previewTheme(key)}
                             className={`p-3 rounded-xl border-2 transition-all ${currentTheme === key
-                                    ? 'border-blue-500 shadow-lg scale-105'
-                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                                ? 'border-blue-500 shadow-lg scale-105'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
                                 }`}
                         >
                             <div className="flex gap-1 mb-2">
@@ -87,8 +86,8 @@ const ThemeCustomizer = () => {
                             <div
                                 key={key}
                                 className={`p-3 rounded-xl border-2 transition-all relative group ${currentTheme === key
-                                        ? 'border-purple-500 shadow-lg scale-105'
-                                        : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+                                    ? 'border-purple-500 shadow-lg scale-105'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
                                     }`}
                             >
                                 <button onClick={() => previewTheme(key)} className="w-full">
