@@ -19,7 +19,9 @@ function runPythonScript(scriptName, data) {
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            error += data.toString();
+            const stderr = data.toString();
+            console.log('[ML Debug]', stderr.trim()); // Log debug output
+            error += stderr;
         });
 
         pythonProcess.on('close', (code) => {
