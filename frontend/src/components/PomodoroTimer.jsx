@@ -15,7 +15,7 @@ const PomodoroTimer = () => {
                     if (minutes === 0) {
                         setIsActive(false);
                         // Play sound or notification here
-                        alert("Time's up!");
+                        // alert("Time's up!");
                     } else {
                         setMinutes(minutes - 1);
                         setSeconds(59);
@@ -52,8 +52,8 @@ const PomodoroTimer = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
                 <Timer className="text-indigo-500" /> Focus Timer
             </h2>
 
@@ -79,7 +79,7 @@ const PomodoroTimer = () => {
             </div>
 
             <div className="text-center mb-8">
-                <div className="text-6xl font-mono font-bold text-gray-800 tracking-wider">
+                <div className="text-6xl font-mono font-bold text-slate-800 tracking-wider">
                     {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                 </div>
                 <p className="text-gray-400 text-sm mt-2">
@@ -90,7 +90,7 @@ const PomodoroTimer = () => {
             <div className="flex justify-center gap-4">
                 <button
                     onClick={toggleTimer}
-                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-200 text-indigo-900 rounded-xl hover:bg-indigo-300 transition-all shadow-sm hover:shadow-md active:scale-95 font-semibold"
                 >
                     {isActive ? <><Pause size={20} /> Pause</> : <><Play size={20} /> Start</>}
                 </button>

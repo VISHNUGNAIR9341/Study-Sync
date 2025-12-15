@@ -54,13 +54,14 @@ async function predictTime(category, size, userId, extraFeatures = {}) {
     }
 }
 
-async function generateSchedule(userId, routine, tasks, routine_blocks = []) {
+async function generateSchedule(userId, routine, tasks, routine_blocks = [], completed_today = {}) {
     try {
         const output = await runPythonScript('schedule.py', {
             user_id: userId,
             routine,
             tasks,
-            routine_blocks
+            routine_blocks,
+            completed_today
         });
         return output.schedule;
     } catch (err) {

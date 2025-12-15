@@ -47,4 +47,32 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Delete task from history (using the history record ID)
+router.delete('/:historyId', async (req, res) => {
+    try {
+        const { historyId } = req.params;
+
+        // First get the task_id from the history record
+        const historyResult = await db.query('SELECT task_id FROM task_history WHERE id = $1', [historyId]);
+
+        if (historyResult.rows.length === 0) {
+            return res.status(404).json({ error: 'History record not found' });
+        }
+
+        const taskId = historyResult.rows[0].task_id;
+
+        // Delete from task_history table
+        await db.query('DELETE FROM task_history WHERE id = $1', [historyId]);
+
+        // Also try to delete the actual task if it still exists
+        if (taskId) {
+            await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+        }
+
+        res.json({ message: 'Task deleted from history' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

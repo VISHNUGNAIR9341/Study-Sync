@@ -7,16 +7,10 @@ const WellnessDashboard = () => {
         water: 0, // glasses today
         sleep: 0, // hours last night
         exercise: 0, // minutes today
-        screenTime: 0, // hours today
-        stress: 3 // 1-5 scale
     });
-
-    const [history, setHistory] = useState([]);
-    const [showAddLog, setShowAddLog] = useState(false);
 
     useEffect(() => {
         loadTodayData();
-        loadHistory();
     }, []);
 
     const loadTodayData = () => {
@@ -25,15 +19,8 @@ const WellnessDashboard = () => {
             water: 0,
             sleep: 0,
             exercise: 0,
-            screenTime: 0,
-            stress: 3
         });
         setWellnessData(savedData);
-    };
-
-    const loadHistory = () => {
-        const savedHistory = storageManager.get('wellness_history', []);
-        setHistory(savedHistory.slice(-7)); // Last 7 days
     };
 
     const updateWellness = (key, value) => {
@@ -42,44 +29,21 @@ const WellnessDashboard = () => {
 
         const today = new Date().toDateString();
         storageManager.set(`wellness_${today}`, newData);
-
-        // Update history
-        const newHistory = [...history.filter(h => h.date !== today), { date: today, ...newData }];
-        storageManager.set('wellness_history', newHistory);
-        loadHistory();
     };
 
     const calculateWellnessScore = () => {
         const waterScore = Math.min((wellnessData.water / 8) * 100, 100);
         const sleepScore = Math.min((wellnessData.sleep / 8) * 100, 100);
         const exerciseScore = Math.min((wellnessData.exercise / 30) * 100, 100);
-        const stressScore = ((6 - wellnessData.stress) / 4) * 100;
 
-        return Math.round((waterScore + sleepScore + exerciseScore + stressScore) / 4);
+        return Math.round((waterScore + sleepScore + exerciseScore) / 3);
     };
 
     const getRecommendation = () => {
-        const recommendations = [];
-
-        if (wellnessData.water < 8) {
-            recommendations.push(`Drink ${8 - wellnessData.water} more glasses of water today`);
-        }
-        if (wellnessData.sleep < 7) {
-            recommendations.push("Try to get at least 7-8 hours of sleep tonight");
-        }
-        if (wellnessData.exercise < 30) {
-            recommendations.push("Take a 15-minute walk to boost your energy");
-        }
-        if (wellnessData.stress > 3) {
-            recommendations.push("Take a 5-minute break to relax and breathe");
-        }
-        if (wellnessData.screenTime > 4) {
-            recommendations.push("Consider taking a screen break to rest your eyes");
-        }
-
-        return recommendations.length > 0
-            ? recommendations[0]
-            : "Great job! You're maintaining excellent wellness habits! 🎉";
+        if (wellnessData.water < 8) return `Drink ${8 - wellnessData.water} more glasses of water today`;
+        if (wellnessData.sleep < 7) return "Try to get at least 7-8 hours of sleep tonight";
+        if (wellnessData.exercise < 30) return "Take a 15-minute walk to boost your energy";
+        return "Great job! You're maintaining excellent wellness habits! 🎉";
     };
 
     const wellnessScore = calculateWellnessScore();
@@ -87,30 +51,27 @@ const WellnessDashboard = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl">
-                        <Heart className="text-white" size={24} />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Wellness Dashboard</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Track your health and well-being</p>
-                    </div>
+            <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                    <Heart className="text-emerald-600 dark:text-emerald-400" size={24} />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-gray-100">Wellness Dashboard</h2>
+                    <p className="text-sm text-slate-500 dark:text-gray-400">Track your daily health essentials</p>
                 </div>
             </div>
 
             {/* Wellness Score */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 p-6 rounded-2xl">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Wellness Score</h3>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Daily Score</h3>
                     <div className="text-right">
                         <p className="text-4xl font-bold text-green-600 dark:text-green-400">{wellnessScore}%</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Overall Health</p>
                     </div>
                 </div>
 
                 {/* Health Rings */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                         <div className="relative w-20 h-20 mx-auto mb-2">
                             <svg className="transform -rotate-90" width="80" height="80">
@@ -173,53 +134,32 @@ const WellnessDashboard = () => {
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{wellnessData.exercise}m</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Exercise</p>
                     </div>
-
-                    <div className="text-center">
-                        <div className="relative w-20 h-20 mx-auto mb-2">
-                            <svg className="transform -rotate-90" width="80" height="80">
-                                <circle cx="40" cy="40" r="36" stroke="#e5e7eb" strokeWidth="8" fill="none" />
-                                <circle
-                                    cx="40" cy="40" r="36"
-                                    stroke="#f59e0b"
-                                    strokeWidth="8"
-                                    fill="none"
-                                    strokeDasharray={`${((6 - wellnessData.stress) / 5) * 226} 226`}
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Heart className="text-orange-500" size={24} />
-                            </div>
-                        </div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{wellnessData.stress}/5</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Stress</p>
-                    </div>
                 </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Water Tracker */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Droplets className="text-blue-500" size={20} />
-                            <h3 className="font-bold text-gray-800 dark:text-gray-100">Water Intake</h3>
+                            <h3 className="font-bold text-gray-800 dark:text-gray-100">Water</h3>
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.water}/8 glasses</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.water}/8</span>
                     </div>
                     <div className="flex gap-2">
                         <button
                             onClick={() => updateWellness('water', Math.max(0, wellnessData.water - 1))}
-                            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-2 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         >
                             -
                         </button>
                         <button
                             onClick={() => updateWellness('water', Math.min(12, wellnessData.water + 1))}
-                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="flex-1 bg-blue-600 text-white px-2 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            +1 Glass
+                            +
                         </button>
                     </div>
                 </div>
@@ -231,7 +171,7 @@ const WellnessDashboard = () => {
                             <Moon className="text-purple-500" size={20} />
                             <h3 className="font-bold text-gray-800 dark:text-gray-100">Sleep</h3>
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.sleep} hours</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.sleep}h</span>
                     </div>
                     <input
                         type="range"
@@ -240,7 +180,7 @@ const WellnessDashboard = () => {
                         step="0.5"
                         value={wellnessData.sleep}
                         onChange={(e) => updateWellness('sleep', parseFloat(e.target.value))}
-                        className="w-full"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                 </div>
 
@@ -251,55 +191,24 @@ const WellnessDashboard = () => {
                             <Dumbbell className="text-green-500" size={20} />
                             <h3 className="font-bold text-gray-800 dark:text-gray-100">Exercise</h3>
                         </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.exercise} min</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{wellnessData.exercise}m</span>
                     </div>
                     <div className="flex gap-2">
                         <button
                             onClick={() => updateWellness('exercise', wellnessData.exercise + 15)}
-                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                            className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                         >
                             +15 min
                         </button>
-                        <button
-                            onClick={() => updateWellness('exercise', wellnessData.exercise + 30)}
-                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                            +30 min
-                        </button>
-                    </div>
-                </div>
-
-                {/* Stress Level */}
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <Heart className="text-orange-500" size={20} />
-                            <h3 className="font-bold text-gray-800 dark:text-gray-100">Stress Level</h3>
-                        </div>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Level {wellnessData.stress}</span>
-                    </div>
-                    <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map(level => (
-                            <button
-                                key={level}
-                                onClick={() => updateWellness('stress', level)}
-                                className={`flex-1 px-3 py-2 rounded-lg transition-colors ${wellnessData.stress === level
-                                        ? 'bg-orange-600 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }`}
-                            >
-                                {level}
-                            </button>
-                        ))}
                     </div>
                 </div>
             </div>
 
             {/* Recommendation */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 p-4 rounded-xl">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
-                    <h3 className="font-bold text-gray-800 dark:text-gray-100">Recommendation</h3>
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100">Tip of the Day</h3>
                 </div>
                 <p className="text-gray-700 dark:text-gray-200">{getRecommendation()}</p>
             </div>
