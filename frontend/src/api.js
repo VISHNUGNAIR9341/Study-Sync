@@ -62,6 +62,11 @@ export const fetchTaskHistory = async (userId) => {
     return response.data;
 };
 
+export const deleteTaskFromHistory = async (taskId) => {
+    const response = await axios.delete(`${API_BASE}/history/${taskId}`);
+    return response.data;
+};
+
 // ===== ROUTINE BLOCKS API =====
 export const fetchRoutineBlocks = async (userId) => {
     const response = await axios.get(`${API_BASE}/routine/blocks/${userId}`);

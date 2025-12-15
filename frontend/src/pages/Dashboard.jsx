@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchTasks, createTask, generateSchedule, updateTaskStatus, updateTaskProgress, deleteTask, fetchUser } from '../api';
+import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser, updateTaskProgress } from '../api';
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Loader2, Trash2, Trophy, Flame, CalendarClock } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
 import RoutineBuilder from '../components/RoutineBuilder';
 import HabitTracker from '../components/HabitTracker';
 import ExamMode from '../components/ExamMode';
-import MoodTracker from '../components/MoodTracker';
-import FocusMusicPlayer from '../components/FocusMusicPlayer';
 import DarkModeToggle from '../components/DarkModeToggle';
 import SmartReminders from '../components/SmartReminders';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
@@ -28,7 +27,7 @@ const Dashboard = ({ userId, onLogout }) => {
     const [error, setError] = useState(null);
     const [newTask, setNewTask] = useState({
         title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
-        complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+        complexity: 'Medium', num_pages: '', num_slides: '', num_questions: '', days_to_complete: ''
     });
 
     const loadData = async () => {
@@ -148,7 +147,7 @@ const Dashboard = ({ userId, onLogout }) => {
             setShowAddModal(false);
             setNewTask({
                 title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
-                complexity: 'Medium', num_pages: '', num_slides: '', num_questions: ''
+                complexity: 'Medium', num_pages: '', num_slides: '', num_questions: '', days_to_complete: ''
             });
             await loadData();
         } catch (err) {
@@ -159,7 +158,6 @@ const Dashboard = ({ userId, onLogout }) => {
     };
 
     const handleDeleteTask = async (taskId) => {
-        if (!window.confirm("Are you sure you want to delete this task?")) return;
         setLoading(true);
         try {
             await deleteTask(taskId);
@@ -198,143 +196,54 @@ const Dashboard = ({ userId, onLogout }) => {
         }
     };
 
-    const handleToggleScheduleItem = async (index) => {
-        const scheduledTask = schedule[index];
-        if (!scheduledTask) return;
+    const [completedSessions, setCompletedSessions] = useState([]);
 
-        setCompletedScheduleItems(prev => {
-            const newSet = new Set(prev);
-            const wasCompleted = newSet.has(index);
+    const handleSessionComplete = async (taskId, duration, scheduleIdx) => {
+        setLoading(true);
+        try {
+            await updateTaskProgress(taskId, duration);
+            // Track this session as completed locally to update UI
+            setCompletedSessions(prev => [...prev, scheduleIdx]);
 
-            if (wasCompleted) {
-                newSet.delete(index);
-            } else {
-                newSet.add(index);
-                // Award points for completing a scheduled task
-                setUserStats(prevStats => ({
-                    ...prevStats,
-                    points: prevStats.points + 10
-                }));
-            }
-
-            // Save to localStorage for persistence
-            localStorage.setItem('completed_schedule_items', JSON.stringify([...newSet]));
-            localStorage.setItem('schedule_date', new Date().toDateString());
-            // Save schedule hash for validation
-            const currentScheduleHash = schedule.map(item =>
-                `${item.task_id}_${item.session_info?.session_num || 0}`
-            ).join(',');
-            localStorage.setItem('schedule_hash', currentScheduleHash);
-
-            // Always update progress (for both check and uncheck)
-            const taskId = scheduledTask.task_id;
-
-            // Find all schedule items for this task IN TODAY'S SCHEDULE
-            const taskScheduleItems = schedule
-                .map((item, idx) => ({ item, idx }))
-                .filter(({ item }) => item.task_id === taskId);
-
-            // Count completed sessions AFTER this toggle (only from today's schedule)
-            const completedSessionsToday = taskScheduleItems.filter(({ idx }) =>
-                newSet.has(idx)
-            ).length;
-
-            // Get total sessions and count properly
-            let totalSessions = taskScheduleItems.length;
-            let completedSessions = completedSessionsToday;
-
-            if (scheduledTask.session_info && scheduledTask.session_info.total_sessions) {
-                // Multi-session task - use total_sessions from session_info
-                totalSessions = scheduledTask.session_info.total_sessions;
-
-                // Count how many unique session numbers are checked in today's schedule
-                const checkedSessionNumbers = new Set(
-                    taskScheduleItems
-                        .filter(({ idx }) => newSet.has(idx))
-                        .map(({ item }) => item.session_info?.session_num)
-                        .filter(Boolean)
-                );
-
-                // The number of unique sessions checked is our completed count
-                completedSessions = checkedSessionNumbers.size;
-            }
-
-            // Calculate progress percentage
-            const progressPercentage = Math.round((completedSessions / totalSessions) * 100);
-
-            // Update task progress in UI immediately
-            setTasks(currentTasks =>
-                currentTasks.map(t =>
-                    t.id === taskId
-                        ? { ...t, progress: progressPercentage }
-                        : t
-                )
-            );
-
-            // Always update progress in backend (for both check and uncheck)
-            updateTaskProgress(taskId, progressPercentage).catch(err =>
-                console.error('Failed to update progress:', err)
-            );
-
-            // Check if all sessions are now completed
-            const allSessionsCompleted = completedSessions === totalSessions;
-
-            // Only mark as complete when checking (not unchecking)
-            if (!wasCompleted) {
-                // If this task has session info and all sessions are done, mark task as completed
-                if (allSessionsCompleted && scheduledTask.session_info) {
-                    const { session_num, total_sessions } = scheduledTask.session_info;
-                    // Only mark complete if this was the last session
-                    if (session_num === total_sessions) {
-                        // Immediately remove from UI
-                        setTasks(currentTasks =>
-                            currentTasks.filter(t => t.id !== taskId)
-                        );
-                        // Mark task as completed in backend
-                        handleCompleteTask(taskId);
-                    }
-                } else if (allSessionsCompleted && !scheduledTask.session_info) {
-                    // Single session task - mark as complete immediately
-                    setTasks(currentTasks =>
-                        currentTasks.filter(t => t.id !== taskId)
-                    );
-                    // Update backend
-                    handleCompleteTask(taskId);
-                }
-            }
-
-            return newSet;
-        });
+            // Refresh data to update progress bars
+            await loadData();
+        } catch (err) {
+            console.error("Error updating progress:", err);
+            setError(`Failed to update progress: ${err.response?.data?.error || err.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 transition-colors duration-200 font-sans">
             <div className="max-w-7xl mx-auto">
                 <header className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <div className="relative">
-                        <h1 className="text-5xl bg-clip-text text-transparent bg-gradient-to-r 
-               from-cyan-300 via-purple-300 to-pink-300">
-                            StudySync
-                        </h1>
-
-                        <p className="text-gray-600 dark:text-gray-300 mt-2 font-medium">Sync your success, one task at a time!</p>
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.svg" alt="StudySync Logo" className="w-14 h-14 object-contain" />
+                        <div>
+                            <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 font-display tracking-wide">
+                                StudySync
+                            </h1>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Master your schedule, maximize your potential.</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <DarkModeToggle />
-                        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 px-5 py-2.5 rounded-full shadow-lg transform hover:scale-110 transition-all">
-                            <Trophy className="text-white" size={22} />
-                            <span className="font-black text-white">{userStats.points} pts</span>
+                        <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 px-4 py-2 rounded-full transform hover:scale-105 transition-all border border-amber-200 dark:border-amber-800">
+                            <Trophy className="text-amber-600 dark:text-amber-400" size={20} />
+                            <span className="font-bold text-amber-700 dark:text-amber-300">{userStats.points} pts</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 rounded-full shadow-lg transform hover:scale-110 transition-all">
-                            <Flame className="text-white" size={22} />
-                            <span className="font-black text-white">{userStats.streak} day streak</span>
+                        <div className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 px-4 py-2 rounded-full transform hover:scale-105 transition-all border border-orange-200 dark:border-orange-800">
+                            <Flame className="text-orange-500 dark:text-orange-400" size={20} />
+                            <span className="font-bold text-orange-700 dark:text-orange-300">{userStats.streak} day streak</span>
                         </div>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white px-8 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all transform hover:scale-110 font-bold"
+                            className="flex items-center gap-2 bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-100 px-6 py-2.5 rounded-full hover:bg-indigo-300 dark:hover:bg-indigo-700 transition-all transform hover:scale-105 font-semibold"
                         >
-                            <Plus size={22} /> New Task
+                            <Plus size={20} /> New Task
                         </button>
                         <button
                             onClick={onLogout}
@@ -353,57 +262,57 @@ const Dashboard = ({ userId, onLogout }) => {
                 )}
 
                 {/* Tab Navigation */}
-                <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+                <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
                     <button
                         onClick={() => setActiveTab('tasks')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'tasks'
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900 dark:hover:to-cyan-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'tasks'
+                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Tasks & Schedule
                     </button>
                     <button
                         onClick={() => setActiveTab('profile')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'profile'
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900 dark:hover:to-purple-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'profile'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Profile
                     </button>
                     <button
                         onClick={() => setActiveTab('routine')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'routine'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900 dark:hover:to-pink-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'routine'
+                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Daily Routine
                     </button>
                     <button
                         onClick={() => setActiveTab('wellness')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'wellness'
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900 dark:hover:to-emerald-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'wellness'
+                            ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Wellness
                     </button>
                     <button
                         onClick={() => setActiveTab('exams')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'exams'
-                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900 dark:hover:to-red-900 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'exams'
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Exams
                     </button>
                     <button
                         onClick={() => setActiveTab('settings')}
-                        className={`px-6 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 whitespace-nowrap ${activeTab === 'settings'
-                            ? 'bg-gradient-to-r from-gray-600 to-gray-800 text-white shadow-2xl scale-105'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800 dark:hover:to-gray-700 shadow-md'
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === 'settings'
+                            ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                             }`}
                     >
                         Settings
@@ -439,14 +348,8 @@ const Dashboard = ({ userId, onLogout }) => {
                     <RoutineBuilder userId={userId} />
                 ) : activeTab === 'wellness' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="space-y-6">
-                            <WellnessDashboard />
-                            <MoodTracker />
-                        </div>
-                        <div className="space-y-6">
-                            <HabitTracker />
-                            <FocusMusicPlayer />
-                        </div>
+                        <WellnessDashboard />
+                        <HabitTracker />
                     </div>
                 ) : activeTab === 'exams' ? (
                     <ExamMode />
@@ -530,9 +433,18 @@ const Dashboard = ({ userId, onLogout }) => {
                         <div className="lg:col-span-2">
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-full">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
-                                        <Calendar className="text-indigo-500" /> Daily Plan
-                                    </h2>
+                                    <div>
+                                        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                                            <Calendar className="text-indigo-500" /> Daily Plan
+                                        </h2>
+                                        {schedule.length > 0 && (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                                                Total Study Time: <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                    {(schedule.filter(i => i.type !== 'routine').reduce((acc, curr) => acc + curr.duration, 0) / 60).toFixed(1)} hours
+                                                </span>
+                                            </p>
+                                        )}
+                                    </div>
                                     <button
                                         onClick={handleGenerateSchedule}
                                         disabled={loading}
@@ -561,49 +473,41 @@ const Dashboard = ({ userId, onLogout }) => {
                                                 <div className={`absolute left-[4.2rem] top-5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10 transition-all ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'
                                                     }`}></div>
 
-                                                <div className="flex-1 mb-6">
-                                                    <div className={`bg-gradient-to-br p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${isCompleted
-                                                        ? 'from-emerald-50 to-white dark:from-emerald-900 dark:to-gray-800 border-emerald-100 dark:border-emerald-800 opacity-60'
-                                                        : 'from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 border-indigo-100 dark:border-indigo-800'
-                                                        }`}>
-                                                        <div className="flex justify-between items-start gap-4">
-                                                            <div className="flex items-start gap-3 flex-1">
-                                                                {/* Checkbox */}
-                                                                <button
-                                                                    onClick={() => handleToggleScheduleItem(idx)}
-                                                                    className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 ${isCompleted
-                                                                        ? 'bg-emerald-500 border-emerald-500'
-                                                                        : 'border-gray-300 dark:border-gray-600 hover:border-indigo-500'
-                                                                        }`}
-                                                                    title={isCompleted ? 'Mark as not done' : 'Mark as done'}
-                                                                >
-                                                                    {isCompleted && (
-                                                                        <CheckCircle className="text-white" size={18} />
-                                                                    )}
-                                                                </button>
-
-                                                                <div className="flex-1">
-                                                                    <h3 className={`text-lg font-bold transition-all ${isCompleted
-                                                                        ? 'text-gray-400 dark:text-gray-500 line-through'
-                                                                        : 'text-gray-800 dark:text-gray-100'
-                                                                        }`}>{item.title}</h3>
-                                                                    <p className={`text-sm font-medium mt-1 flex items-center gap-1 transition-all ${isCompleted
-                                                                        ? 'text-gray-400 dark:text-gray-600'
-                                                                        : 'text-indigo-600 dark:text-indigo-400'
-                                                                        }`}>
-                                                                        <Clock size={14} /> {item.duration} minutes
+                                            <div className="flex-1 mb-6">
+                                                <div className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${item.type === 'routine'
+                                                    ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                                    : item.type === 'completed_session'
+                                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                                                        : 'bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900 dark:to-gray-800 border-indigo-100 dark:border-indigo-800'
+                                                    }`}>
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h3 className={`text-lg font-bold ${item.type === 'routine' ? 'text-gray-600 dark:text-gray-300' : 'text-gray-800 dark:text-gray-100'}`}>
+                                                                {item.title}
+                                                            </h3>
+                                                            <div className={`${item.type === 'routine' ? 'text-gray-500' : 'text-indigo-600 dark:text-indigo-400'} text-sm font-medium mt-1 space-y-1`}>
+                                                                <p className="flex items-center gap-1">
+                                                                    <Clock size={14} />
+                                                                    {item.duration >= 60
+                                                                        ? `${Math.floor(item.duration / 60)}h ${item.duration % 60 > 0 ? `${item.duration % 60}m` : ''}`
+                                                                        : `${item.duration}m`}
+                                                                    {item.type !== 'routine' && item.type !== 'completed_session' && ' scheduled'}
+                                                                    {item.type === 'completed_session' && ' completed'}
+                                                                </p>
+                                                                {item.remaining_minutes !== undefined && (
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                                        <Loader2 size={12} />
+                                                                        {Math.floor(item.remaining_minutes / 60)}h {item.remaining_minutes % 60}m remaining total
                                                                     </p>
-                                                                    {item.session_info && item.session_info.is_multi_session && (
-                                                                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                                                            Session {item.session_info.session_num} of {item.session_info.total_sessions}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
+                                                                )}
                                                             </div>
-                                                            <div className={`text-right text-xs transition-all ${isCompleted ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400'
-                                                                }`}>
-                                                                Ends at {item.end}
-                                                            </div>
+                                                        </div>
+                                                        <div className="text-right text-xs text-gray-400">
+                                                            {item.type === 'completed_session' ? (
+                                                                <span className="text-green-600 font-bold">Done</span>
+                                                            ) : (
+                                                                `Ends at ${item.end}`
+                                                            )}
                                                         </div>
                                                         {isCompleted && (
                                                             <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-800">
@@ -613,6 +517,29 @@ const Dashboard = ({ userId, onLogout }) => {
                                                             </div>
                                                         )}
                                                     </div>
+                                                    {item.type !== 'routine' && item.type !== 'completed_session' && (
+                                                        <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-800 flex justify-end">
+                                                            {completedSessions.includes(idx) ? (
+                                                                <span className="text-xs flex items-center gap-1 text-gray-500 font-medium bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                                                    <CheckCircle size={14} className="text-green-500" /> Done for today
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleSessionComplete(item.task_id, item.duration, idx)}
+                                                                    className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
+                                                                >
+                                                                    <CheckCircle size={14} /> Mark as Done
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {item.type === 'completed_session' && (
+                                                        <div className="mt-3 pt-3 border-t border-green-100 dark:border-green-900 flex justify-end">
+                                                            <span className="text-xs flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                                                                <CheckCircle size={14} /> Completed Today
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -748,15 +675,41 @@ const Dashboard = ({ userId, onLogout }) => {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         <CalendarClock size={16} className="inline mr-1" />
-                                        Deadline
+                                        Days to Complete
                                     </label>
-                                    <input
-                                        type="datetime-local"
-                                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        value={newTask.deadline}
-                                        onChange={e => setNewTask({ ...newTask, deadline: e.target.value })}
-                                        required
-                                    />
+                                    <div className="flex gap-4 items-center">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            placeholder="e.g. 3"
+                                            className="w-1/3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            value={newTask.days_to_complete || ''}
+                                            onChange={e => {
+                                                const days = parseInt(e.target.value);
+                                                const date = new Date();
+                                                date.setDate(date.getDate() + (days || 0));
+                                                // Set time to end of day (23:59)
+                                                date.setHours(23, 59, 0, 0);
+
+                                                // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+                                                const formatted = date.toISOString().slice(0, 16);
+
+                                                setNewTask({
+                                                    ...newTask,
+                                                    days_to_complete: e.target.value,
+                                                    deadline: formatted
+                                                });
+                                            }}
+                                            required
+                                        />
+                                        {newTask.deadline && (
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-4 py-2 rounded-lg flex-1 border border-gray-200 dark:border-gray-600">
+                                                Deadline: <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                                    {new Date(newTask.deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-6">
