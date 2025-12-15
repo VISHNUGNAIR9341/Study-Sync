@@ -8,13 +8,13 @@ export const themePresets = {
     default: {
         name: 'Default',
         colors: {
-            primary: '#6366f1',
-            secondary: '#8b5cf6',
-            accent: '#ec4899',
-            background: '#f9fafb',
+            primary: '#94a3b8',   /* Slate 400 - Soft Neutral Blue-Grey */
+            secondary: '#cbd5e1', /* Slate 300 */
+            accent: '#e2e8f0',    /* Slate 200 */
+            background: '#f8fafc',/* Slate 50 */
             surface: '#ffffff',
-            text: '#111827',
-            textSecondary: '#6b7280'
+            text: '#475569',      /* Slate 600 - Soft Text */
+            textSecondary: '#94a3b8'
         }
     },
     ocean: {

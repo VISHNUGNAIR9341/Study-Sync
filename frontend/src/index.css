@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default "Pastel" Theme if JS fails or for initial paint */
+  --color-primary: #8B5CF6;   /* Soft Violet */
+  --color-secondary: #34D399; /* Soft Mint */
+  --color-accent: #F472B6;    /* Soft Pink */
+  --color-background: #F8FAFC;/* Very Light Slate */
+  --color-surface: #FFFFFF;
+  --color-text: #334155;      /* Slate 700 */
+  --color-textSecondary: #64748B; /* Slate 500 */
+  
+  --base-font-size: 16px;
+  --font-family: 'Inter', sans-serif;
+  --layout-density: 1;
+}
+
 body {
-  @apply bg-background text-gray-900 font-sans;
+  @apply bg-background text-text font-sans;
+  font-size: var(--base-font-size);
+  font-family: var(--font-family);
+  line-height: calc(1.5 * var(--layout-density, 1));
+}
+
+/* Custom Scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
 }
