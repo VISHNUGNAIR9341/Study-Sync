@@ -25,6 +25,7 @@ def train_base_model():
     current_dir = os.path.dirname(__file__)
     # Try different locations for the dataset
     possible_paths = [
+        os.path.join(current_dir, 'generated_dataset_2000_realistic.csv'),
         os.path.join(current_dir, 'prediction_ready_dataset.csv'),
         '/mnt/data/prediction_ready_dataset.csv',
         os.path.join(current_dir, 'realistic_dataset_2000.csv') # Fallback
