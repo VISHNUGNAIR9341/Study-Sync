@@ -88,6 +88,84 @@ def get_free_slots(wake_up_str, sleep_str, routine_blocks):
     
     return free_slots
 
+def break_task_into_sessions(task):
+    """
+    Break a task into sessions - one session per day until deadline.
+    Distributes work evenly across all available days.
+    """
+    duration = task.get('predicted_time', 30)
+    deadline_str = task.get('deadline')
+    
+    # Calculate days until deadline
+    if deadline_str:
+        try:
+            import math
+            
+            # Parse deadline - try ISO format and common formats
+            task_deadline = None
+            
+            # Try ISO format first (most common from frontend)
+            try:
+                task_deadline = datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+            except:
+                pass
+            
+            # Try parsing YYYY-MM-DD format
+            if not task_deadline:
+                try:
+                    task_deadline = datetime.strptime(deadline_str.split('T')[0], '%Y-%m-%d')
+                except:
+                    pass
+            
+            if not task_deadline:
+                raise ValueError(f"Could not parse deadline: {deadline_str}")
+            
+            now = datetime.now()
+            
+            # Match frontend: Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
+            time_difference_seconds = (task_deadline - now).total_seconds()
+            days_available = max(1, math.ceil(time_difference_seconds / 86400))
+            
+            print(f"DEBUG: Deadline={deadline_str}, Days={days_available}", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"ERROR parsing deadline '{deadline_str}': {e}", file=sys.stderr, flush=True)
+            # Default to 2 days if parsing fails
+            days_available = 2
+    else:
+        # Default to spreading over 3-7 days based on task length
+        days_available = min(7, max(3, duration // 30))
+    
+    sessions = []
+    
+    # Break down strategy based on duration
+    if duration <= 45:
+        # Short task - do in one session
+        sessions.append({
+            "duration": duration,
+            "session_num": 1,
+            "total_sessions": 1
+        })
+    else:
+        # Divide by days - one session per day
+        num_sessions = max(2, days_available)
+        
+        minutes_per_session = duration // num_sessions
+        remaining_minutes = duration % num_sessions
+        
+        for i in range(num_sessions):
+            session_duration = minutes_per_session
+            if i < remaining_minutes:
+                session_duration += 1
+            
+            sessions.append({
+                "duration": session_duration,
+                "session_num": i + 1,
+                "total_sessions": num_sessions
+            })
+    
+    return sessions
+
+
 def schedule():
     try:
         # Read input from stdin
@@ -120,6 +198,9 @@ def schedule():
         )
         
         schedule_list = []
+        
+        print(f"DEBUG: Received {len(sorted_tasks)} tasks to schedule", file=sys.stderr, flush=True)
+        print(f"DEBUG: Available free slots: {len(free_slots)}", file=sys.stderr, flush=True)
         
         # Schedule tasks in free slots
         for task in sorted_tasks:
@@ -238,9 +319,16 @@ def schedule():
                 task_start_minutes = slot_start
                 task_end_minutes = slot_start + duration
                 
+                # Create session title
+                task_title = task.get('title')
+                if first_session["total_sessions"] > 1:
+                    session_title = f"{task_title} (Part {first_session['session_num']}/{first_session['total_sessions']})"
+                else:
+                    session_title = task_title
+                
                 schedule_list.append({
                     "task_id": task.get('id'),
-                    "title": task.get('title'),
+                    "title": session_title,
                     "start": minutes_to_time(task_start_minutes),
                     "end": minutes_to_time(task_end_minutes),
                     "duration": duration,

@@ -10,6 +10,16 @@ const RoutineSetup = ({ userId }) => {
         daily_blocks: []
     });
 
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours, 10);
+        const m = parseInt(minutes, 10);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+    };
+
     useEffect(() => {
         const loadRoutine = async () => {
             const data = await fetchRoutine(userId);
@@ -39,6 +49,7 @@ const RoutineSetup = ({ userId }) => {
                             onChange={(e) => setRoutine({ ...routine, wake_up: e.target.value })}
                             className="mt-1 block w-full border rounded p-2"
                         />
+                        <p className="text-xs text-gray-500 mt-1">{formatTime(routine.wake_up)}</p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700">Sleep Time</label>
@@ -48,6 +59,7 @@ const RoutineSetup = ({ userId }) => {
                             onChange={(e) => setRoutine({ ...routine, sleep: e.target.value })}
                             className="mt-1 block w-full border rounded p-2"
                         />
+                        <p className="text-xs text-gray-500 mt-1">{formatTime(routine.sleep)}</p>
                     </div>
                 </div>
 

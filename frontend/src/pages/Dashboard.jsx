@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { fetchTasks, createTask, generateSchedule, updateTaskStatus, updateTaskProgress, deleteTask, fetchUser } from '../api';
 import { fetchTasks, createTask, generateSchedule, updateTaskStatus, deleteTask, fetchUser, updateTaskProgress } from '../api';
 import { Plus, Calendar, CheckCircle, Clock, AlertCircle, Loader2, Trash2, Trophy, Flame, CalendarClock } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
@@ -17,6 +18,7 @@ import DatabaseViewer from '../components/DatabaseViewer';
 const Dashboard = ({ userId, onLogout }) => {
     const [tasks, setTasks] = useState([]);
     const [schedule, setSchedule] = useState([]);
+    const [completedScheduleItems, setCompletedScheduleItems] = useState(new Set());
     const [activeTab, setActiveTab] = useState('tasks');
     const [showDatabaseViewer, setShowDatabaseViewer] = useState(false);
     const [userStats, setUserStats] = useState({ points: 0, streak: 0 });
@@ -49,6 +51,87 @@ const Dashboard = ({ userId, onLogout }) => {
     useEffect(() => {
         loadData();
     }, [userId]);
+
+    // Auto-generate schedule when dashboard loads or tasks change
+    useEffect(() => {
+        const autoGenerateSchedule = async () => {
+            if (tasks.length > 0 && userId) {
+                try {
+                    const scheduleData = await generateSchedule(userId);
+                    setSchedule(scheduleData || []);
+
+                    // Load saved completion state from localStorage
+                    const savedDate = localStorage.getItem('schedule_date');
+                    const today = new Date().toDateString();
+
+                    // Only restore if it's the same day AND we have a valid schedule
+                    if (savedDate === today && scheduleData && scheduleData.length > 0) {
+                        const savedCompletions = localStorage.getItem('completed_schedule_items');
+                        if (savedCompletions) {
+                            try {
+                                const savedIndices = JSON.parse(savedCompletions);
+
+                                // Create a hash of current schedule for validation
+                                const currentScheduleHash = scheduleData.map(item =>
+                                    `${item.task_id}_${item.session_info?.session_num || 0}`
+                                ).join(',');
+
+                                const savedScheduleHash = localStorage.getItem('schedule_hash');
+
+                                // Only restore if schedule hasn't changed significantly
+                                if (savedScheduleHash === currentScheduleHash) {
+                                    // Only restore indices that are still valid for current schedule
+                                    const validIndices = savedIndices.filter(idx =>
+                                        idx < scheduleData.length && scheduleData[idx] != null
+                                    );
+                                    setCompletedScheduleItems(new Set(validIndices));
+
+                                    // Update localStorage with only valid indices
+                                    if (validIndices.length !== savedIndices.length) {
+                                        localStorage.setItem('completed_schedule_items', JSON.stringify(validIndices));
+                                    }
+                                } else {
+                                    // Schedule changed - clear old completions
+                                    console.log('Schedule changed, clearing old completions');
+                                    localStorage.removeItem('completed_schedule_items');
+                                    localStorage.setItem('schedule_hash', currentScheduleHash);
+                                    setCompletedScheduleItems(new Set());
+                                }
+                            } catch (e) {
+                                // Invalid data - clear it
+                                console.error('Error parsing saved completions:', e);
+                                localStorage.removeItem('completed_schedule_items');
+                                setCompletedScheduleItems(new Set());
+                            }
+                        } else {
+                            // No saved completions - save current hash
+                            const currentScheduleHash = scheduleData.map(item =>
+                                `${item.task_id}_${item.session_info?.session_num || 0}`
+                            ).join(',');
+                            localStorage.setItem('schedule_hash', currentScheduleHash);
+                        }
+                    } else if (savedDate !== today) {
+                        // New day - clear old data
+                        localStorage.setItem('schedule_date', today);
+                        localStorage.removeItem('completed_schedule_items');
+                        localStorage.removeItem('schedule_hash');
+                        setCompletedScheduleItems(new Set());
+                    } else {
+                        // Same day but no schedule or empty - clear completions
+                        setCompletedScheduleItems(new Set());
+                    }
+                } catch (err) {
+                    console.error("Auto-schedule failed:", err);
+                    // Silently fail - user can manually trigger if needed
+                }
+            }
+        };
+
+        // Only auto-generate if we have tasks and are on the tasks tab
+        if (activeTab === 'tasks') {
+            autoGenerateSchedule();
+        }
+    }, [tasks, userId, activeTab]); // Re-run when tasks change
 
     const handleAddTask = async (e) => {
         e.preventDefault();
@@ -103,6 +186,9 @@ const Dashboard = ({ userId, onLogout }) => {
         try {
             const scheduleData = await generateSchedule(userId);
             setSchedule(scheduleData || []);
+            // Clear completed items when manually regenerating schedule
+            setCompletedScheduleItems(new Set());
+            localStorage.removeItem('completed_schedule_items');
         } catch (err) {
             setError("Failed to generate schedule.");
         } finally {
@@ -303,7 +389,7 @@ const Dashboard = ({ userId, onLogout }) => {
                                                         {task.deadline && (
                                                             <p className="text-xs mt-1 text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
                                                                 <CalendarClock size={12} />
-                                                                Due: {new Date(task.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                Due: {new Date(task.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                                                             </p>
                                                         )}
                                                         {/* Progress Bar */}
@@ -363,9 +449,10 @@ const Dashboard = ({ userId, onLogout }) => {
                                         onClick={handleGenerateSchedule}
                                         disabled={loading}
                                         className="flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900 px-4 py-2 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors disabled:opacity-50"
+                                        title="Regenerate today's schedule"
                                     >
                                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Clock size={16} />}
-                                        Auto-Schedule
+                                        Refresh Schedule
                                     </button>
                                 </div>
 
@@ -374,13 +461,17 @@ const Dashboard = ({ userId, onLogout }) => {
                                         <div className="absolute left-[4.5rem] top-4 bottom-4 w-0.5 bg-gray-200 dark:bg-gray-600 hidden md:block"></div>
                                     )}
 
-                                    {schedule.map((item, idx) => (
-                                        <div key={idx} className="relative flex flex-col md:flex-row gap-6 group">
-                                            <div className="md:w-16 text-right pt-4">
-                                                <span className="text-sm font-mono font-bold text-gray-500 dark:text-gray-400">{item.start}</span>
-                                            </div>
+                                    {schedule.map((item, idx) => {
+                                        const isCompleted = completedScheduleItems.has(idx);
+                                        return (
+                                            <div key={idx} className="relative flex flex-col md:flex-row gap-6 group">
+                                                <div className="md:w-16 text-right pt-4">
+                                                    <span className={`text-sm font-mono font-bold transition-all ${isCompleted ? 'text-gray-300 dark:text-gray-600 line-through' : 'text-gray-500 dark:text-gray-400'
+                                                        }`}>{item.start}</span>
+                                                </div>
 
-                                            <div className="absolute left-[4.2rem] top-5 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10"></div>
+                                                <div className={`absolute left-[4.2rem] top-5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 shadow hidden md:block z-10 transition-all ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'
+                                                    }`}></div>
 
                                             <div className="flex-1 mb-6">
                                                 <div className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-all ${item.type === 'routine'
@@ -418,6 +509,13 @@ const Dashboard = ({ userId, onLogout }) => {
                                                                 `Ends at ${item.end}`
                                                             )}
                                                         </div>
+                                                        {isCompleted && (
+                                                            <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-800">
+                                                                <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                                    <CheckCircle size={12} /> Task completed! +10 points
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     {item.type !== 'routine' && item.type !== 'completed_session' && (
                                                         <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-800 flex justify-end">
@@ -444,8 +542,8 @@ const Dashboard = ({ userId, onLogout }) => {
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {schedule.length === 0 && !loading && (
                                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">

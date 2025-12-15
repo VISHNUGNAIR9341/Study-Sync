@@ -59,7 +59,7 @@ const Login = ({ setUserId }) => {
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {isRegistering && (
                             <div className="relative group">
                                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
@@ -102,7 +102,7 @@ const Login = ({ setUserId }) => {
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm text-center animate-pulse">
+                            <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm text-center">
                                 {error}
                             </div>
                         )}

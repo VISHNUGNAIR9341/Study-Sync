@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchTaskDetails, generateSchedule, fetchTasks } from '../api';
+import { fetchTaskDetails, generateSchedule, fetchTasks, updateTaskStatus, updateTaskProgress } from '../api';
 import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, BookOpen, Layers, List, Zap } from 'lucide-react';
 
 const TaskDetails = () => {
@@ -9,6 +9,7 @@ const TaskDetails = () => {
     const [task, setTask] = useState(null);
     const [schedule, setSchedule] = useState([]);
     const [dailyPlan, setDailyPlan] = useState([]);
+    const [completedTodayItems, setCompletedTodayItems] = useState(new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -26,6 +27,31 @@ const TaskDetails = () => {
                 if (taskData && taskData.user_id) {
                     const scheduleData = await generateSchedule(taskData.user_id);
                     setDailyPlan(scheduleData || []);
+
+                    // Load saved completion state from localStorage
+                    const savedDate = localStorage.getItem('schedule_date');
+                    const today = new Date().toDateString();
+
+                    // Only restore if it's the same day AND we have a valid schedule
+                    if (savedDate === today && scheduleData && scheduleData.length > 0) {
+                        const savedCompletions = localStorage.getItem('completed_schedule_items');
+                        if (savedCompletions) {
+                            try {
+                                const savedIndices = JSON.parse(savedCompletions);
+                                // Only restore indices that are still valid for current schedule
+                                const validIndices = savedIndices.filter(idx =>
+                                    idx < scheduleData.length && scheduleData[idx] != null
+                                );
+                                setCompletedTodayItems(new Set(validIndices));
+                            } catch (e) {
+                                console.error('Error parsing saved completions:', e);
+                                setCompletedTodayItems(new Set());
+                            }
+                        }
+                    } else {
+                        // Different day or invalid schedule - clear completions
+                        setCompletedTodayItems(new Set());
+                    }
                 }
 
                 // 3. Generate "Task Schedule till Deadline"
@@ -52,10 +78,9 @@ const TaskDetails = () => {
     }, [dailyPlan, task]);
 
     const generateLongTermPlan = (task) => {
-        // Simple logic to distribute work
-        // Assume we can work 2 hours a day on this task
+        // Divide task evenly across days until deadline
         const totalMinutes = task.manual_time || task.ml_predicted_time || task.default_expected_time || 60;
-        const deadline = task.deadline ? new Date(task.deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+        const deadline = task.deadline ? new Date(task.deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const now = new Date();
 
         const daysUntilDeadline = Math.max(1, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
@@ -64,8 +89,17 @@ const TaskDetails = () => {
         // We want to distribute remaining work evenly
         const minutesPerDay = Math.ceil(totalMinutes / daysUntilDeadline);
 
-        const plan = [];
-        let remainingMinutes = totalMinutes;
+        // Divide by days - one session per day
+        let numSessions;
+        if (totalMinutes <= 45) {
+            numSessions = 1;
+        } else {
+            // One session per day until deadline
+            numSessions = Math.max(2, daysUntilDeadline);
+        }
+
+        const minutesPerSession = Math.floor(totalMinutes / numSessions);
+        const remainingMinutes = totalMinutes % numSessions;
 
         // Check if we have scheduled sessions for today in dailyPlan
         // Note: dailyPlan is fetched in useEffect
@@ -78,6 +112,7 @@ const TaskDetails = () => {
         for (let i = 0; i < daysUntilDeadline; i++) {
             if (remainingMinutes <= 0) break;
 
+        for (let i = 0; i < numSessions; i++) {
             const date = new Date();
             date.setDate(date.getDate() + i);
             const dateString = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -102,10 +137,104 @@ const TaskDetails = () => {
                 duration: sessionDuration,
                 focus: focus
             });
-
-            remainingMinutes -= sessionDuration;
         }
+
         setSchedule(plan);
+    };
+
+    const handleToggleTodayItem = async (index) => {
+        const scheduledTask = dailyPlan[index];
+        if (!scheduledTask) return;
+
+        setCompletedTodayItems(prev => {
+            const newSet = new Set(prev);
+            const wasCompleted = newSet.has(index);
+
+            if (wasCompleted) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+
+            // Save to localStorage for persistence
+            localStorage.setItem('completed_schedule_items', JSON.stringify([...newSet]));
+            localStorage.setItem('schedule_date', new Date().toDateString());
+
+            // Always update progress (for both check and uncheck)
+            const taskId = scheduledTask.task_id;
+
+            // Find all schedule items for this task IN TODAY'S SCHEDULE
+            const taskScheduleItems = dailyPlan
+                .map((item, idx) => ({ item, idx }))
+                .filter(({ item }) => item.task_id === taskId);
+
+            // Count completed sessions AFTER this toggle (only from today's schedule)
+            const completedSessionsToday = taskScheduleItems.filter(({ idx }) =>
+                newSet.has(idx)
+            ).length;
+
+            // Get total sessions and count properly
+            let totalSessions = taskScheduleItems.length;
+            let completedSessions = completedSessionsToday;
+
+            if (scheduledTask.session_info && scheduledTask.session_info.total_sessions) {
+                // Multi-session task - use total_sessions from session_info
+                totalSessions = scheduledTask.session_info.total_sessions;
+
+                // Count how many unique session numbers are checked in today's schedule
+                const checkedSessionNumbers = new Set(
+                    taskScheduleItems
+                        .filter(({ idx }) => newSet.has(idx))
+                        .map(({ item }) => item.session_info?.session_num)
+                        .filter(Boolean)
+                );
+
+                // The number of unique sessions checked is our completed count
+                completedSessions = checkedSessionNumbers.size;
+            }
+
+            // Calculate progress percentage
+            const progressPercentage = Math.round((completedSessions / totalSessions) * 100);
+
+            // Update task progress if it's the current task
+            if (taskId === task.id) {
+                setTask(currentTask => ({
+                    ...currentTask,
+                    progress: progressPercentage
+                }));
+            }
+
+            // Always update progress in backend
+            updateTaskProgress(taskId, progressPercentage).catch(err =>
+                console.error('Failed to update progress:', err)
+            );
+
+            // Check if all sessions are now completed
+            const allSessionsCompleted = completedSessions === totalSessions;
+
+            // Only mark as complete when checking (not unchecking)
+            if (!wasCompleted) {
+                // If this task has session info and all sessions are done, mark task as completed
+                if (allSessionsCompleted && scheduledTask.session_info) {
+                    const { session_num, total_sessions } = scheduledTask.session_info;
+                    // Only mark complete if this was the last session
+                    if (session_num === total_sessions && taskId === task.id) {
+                        // Mark current task as completed
+                        updateTaskStatus(taskId, 'Completed').then(() => {
+                            // Reload to show completion
+                            window.location.reload();
+                        });
+                    }
+                } else if (allSessionsCompleted && !scheduledTask.session_info && taskId === task.id) {
+                    // Single session task - mark as complete
+                    updateTaskStatus(taskId, 'Completed').then(() => {
+                        window.location.reload();
+                    });
+                }
+            }
+
+            return newSet;
+        });
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
@@ -146,7 +275,7 @@ const TaskDetails = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="text-indigo-500" size={18} />
-                                    <span>Due: {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No Deadline'}</span>
+                                    <span>Due: {task.deadline ? new Date(task.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'No Deadline'}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Layers className="text-indigo-500" size={18} />
@@ -186,26 +315,57 @@ const TaskDetails = () => {
                             </p>
 
                             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
-                                {schedule.map((day, idx) => (
-                                    <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                                        {/* Icon */}
-                                        <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-300 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-emerald-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                                            <Calendar size={16} />
-                                        </div>
+                                {schedule.map((day, idx) => {
+                                    // Check if this session is completed
+                                    // We use the idx + 1 as session number (Part 1, Part 2, etc.)
+                                    const sessionNum = idx + 1;
 
-                                        {/* Card */}
-                                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white dark:bg-gray-700 p-4 rounded-xl border border-slate-200 dark:border-gray-600 shadow-sm">
-                                            <div className="flex items-center justify-between space-x-2 mb-1">
-                                                <div className="font-bold text-slate-900 dark:text-white">{day.date}</div>
-                                                <time className="font-caveat font-medium text-indigo-500">{day.duration} min</time>
+                                    // Find if this session is in today's plan and is checked
+                                    const matchingTodayItem = dailyPlan.findIndex(item =>
+                                        item.task_id === task.id &&
+                                        item.session_info?.session_num === sessionNum
+                                    );
+
+                                    const isCompleted = matchingTodayItem !== -1 && completedTodayItems.has(matchingTodayItem);
+
+                                    return (
+                                        <div key={idx} className={`relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group ${isCompleted ? 'is-complete' : 'is-active'}`}>
+                                            {/* Icon */}
+                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border border-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 transition-all ${isCompleted
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-slate-300 group-[.is-active]:bg-indigo-500 text-slate-500 group-[.is-active]:text-emerald-50'
+                                                }`}>
+                                                {isCompleted ? <CheckCircle size={16} /> : <Calendar size={16} />}
                                             </div>
-                                            <div className="text-slate-500 dark:text-gray-300 text-sm">{day.focus}</div>
-                                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mt-3">
-                                                <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${(day.duration / (task.manual_time || task.ml_predicted_time || 60)) * 100}%` }}></div>
+
+                                            {/* Card */}
+                                            <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border shadow-sm transition-all ${isCompleted
+                                                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+                                                : 'bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600'
+                                                }`}>
+                                                <div className="flex items-center justify-between space-x-2 mb-1">
+                                                    <div className={`font-bold ${isCompleted ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'}`}>
+                                                        {day.date}
+                                                    </div>
+                                                    <time className={`font-caveat font-medium ${isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-500'}`}>
+                                                        {day.duration} min
+                                                    </time>
+                                                </div>
+                                                <div className={`text-sm ${isCompleted ? 'text-emerald-600 dark:text-emerald-300' : 'text-slate-500 dark:text-gray-300'}`}>
+                                                    {day.focus}
+                                                </div>
+                                                {isCompleted && (
+                                                    <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                                                        <CheckCircle size={12} /> Completed!
+                                                    </div>
+                                                )}
+                                                <div className={`w-full rounded-full h-1.5 mt-3 ${isCompleted ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-gray-200 dark:bg-gray-600'}`}>
+                                                    <div className={`h-1.5 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: isCompleted ? '100%' : `${(day.duration / (task.manual_time || task.ml_predicted_time || 60)) * 100}%` }}></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -219,17 +379,57 @@ const TaskDetails = () => {
 
                             {dailyPlan.length > 0 ? (
                                 <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-3 space-y-6 pl-6 py-2">
-                                    {dailyPlan.map((item, idx) => (
-                                        <div key={idx} className="relative">
-                                            <div className={`absolute -left-[1.6rem] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${item.title === task.title ? 'bg-indigo-500 ring-4 ring-indigo-100 dark:ring-indigo-900' : 'bg-gray-300 dark:bg-gray-600'
-                                                }`}></div>
-                                            <p className="text-xs text-gray-500 font-mono mb-1">{item.start} - {item.end}</p>
-                                            <h4 className={`font-semibold ${item.title === task.title ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                {item.title}
-                                            </h4>
-                                            <p className="text-xs text-gray-500">{item.duration} min</p>
-                                        </div>
-                                    ))}
+                                    {dailyPlan.map((item, idx) => {
+                                        const isCompleted = completedTodayItems.has(idx);
+                                        const isCurrentTask = item.title.includes(task.title) || item.task_id === taskId;
+                                        return (
+                                            <div key={idx} className="relative group">
+                                                <div className={`absolute -left-[1.6rem] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transition-all ${isCompleted ? 'bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-900' :
+                                                    isCurrentTask ? 'bg-indigo-500 ring-4 ring-indigo-100 dark:ring-indigo-900' :
+                                                        'bg-gray-300 dark:bg-gray-600'
+                                                    }`}></div>
+
+                                                <div className="flex items-start gap-2">
+                                                    {/* Checkbox */}
+                                                    <button
+                                                        onClick={() => handleToggleTodayItem(idx)}
+                                                        className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 shrink-0 ${isCompleted
+                                                            ? 'bg-emerald-500 border-emerald-500'
+                                                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-500'
+                                                            }`}
+                                                        title={isCompleted ? 'Mark as not done' : 'Mark as done'}
+                                                    >
+                                                        {isCompleted && (
+                                                            <CheckCircle className="text-white" size={14} />
+                                                        )}
+                                                    </button>
+
+                                                    <div className="flex-1">
+                                                        <p className={`text-xs font-mono mb-1 transition-all ${isCompleted ? 'text-gray-400 dark:text-gray-600 line-through' : 'text-gray-500'
+                                                            }`}>{item.start} - {item.end}</p>
+                                                        <h4 className={`font-semibold transition-all ${isCompleted ? 'text-gray-400 dark:text-gray-500 line-through' :
+                                                            isCurrentTask ? 'text-indigo-600 dark:text-indigo-400' :
+                                                                'text-gray-700 dark:text-gray-300'
+                                                            }`}>
+                                                            {item.title}
+                                                        </h4>
+                                                        <p className={`text-xs transition-all ${isCompleted ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500'
+                                                            }`}>{item.duration} min</p>
+                                                        {item.session_info && item.session_info.is_multi_session && (
+                                                            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                                                Session {item.session_info.session_num} of {item.session_info.total_sessions}
+                                                            </p>
+                                                        )}
+                                                        {isCompleted && (
+                                                            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                                                                <CheckCircle size={10} /> Completed!
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className="text-gray-500 text-center py-4">No schedule generated for today yet.</p>
