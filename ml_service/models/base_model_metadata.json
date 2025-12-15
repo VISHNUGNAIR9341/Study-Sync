@@ -1,0 +1,55 @@
+{
+  "medians": {
+    "estimated_size": 3.5,
+    "title_length": 30.0,
+    "user_experience_level": 3.0,
+    "num_pages": 0.0,
+    "num_slides": 0.0,
+    "num_questions": 9.0
+  },
+  "categories": {
+    "category": [
+      "project",
+      "presentation",
+      "reading"
+    ],
+    "priority": [
+      "Low",
+      "Medium",
+      "Urgent"
+    ],
+    "time_of_day": [
+      "evening",
+      "morning",
+      "night",
+      "afternoon"
+    ],
+    "day_of_week": [
+      "Monday",
+      "Thursday",
+      "Tuesday",
+      "Wednesday",
+      "Sunday",
+      "Saturday",
+      "Friday"
+    ],
+    "complexity": [
+      "Medium",
+      "Low",
+      "High"
+    ]
+  },
+  "feature_order": [
+    "estimated_size",
+    "title_length",
+    "user_experience_level",
+    "num_pages",
+    "num_slides",
+    "num_questions",
+    "category",
+    "priority",
+    "time_of_day",
+    "day_of_week",
+    "complexity"
+  ]
+}

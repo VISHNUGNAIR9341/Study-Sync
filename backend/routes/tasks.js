@@ -38,7 +38,9 @@ router.post('/', async (req, res) => {
                 complexity,
                 num_pages,
                 num_slides,
-                num_questions
+                num_questions,
+                priority,
+                title
             });
             if (predicted) {
                 ml_predicted_time = predicted;
