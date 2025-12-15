@@ -220,14 +220,22 @@ const TaskDetails = () => {
                     // Only mark complete if this was the last session
                     if (session_num === total_sessions && taskId === task.id) {
                         // Mark current task as completed
-                        updateTaskStatus(taskId, 'Completed').then(() => {
+                        // Ask user for actual time for ML training
+                        const actualTimeStr = window.prompt("Task Completed! How many minutes did it actually take?", task.manual_time || task.ml_predicted_time || task.default_expected_time);
+                        const actualTime = actualTimeStr ? parseInt(actualTimeStr) : null;
+
+                        updateTaskStatus(taskId, 'Completed', actualTime).then(() => {
                             // Reload to show completion
                             window.location.reload();
                         });
                     }
                 } else if (allSessionsCompleted && !scheduledTask.session_info && taskId === task.id) {
                     // Single session task - mark as complete
-                    updateTaskStatus(taskId, 'Completed').then(() => {
+                    // Single session task - mark as complete
+                    const actualTimeStr = window.prompt("Task Completed! How many minutes did it actually take?", task.manual_time || task.ml_predicted_time || task.default_expected_time);
+                    const actualTime = actualTimeStr ? parseInt(actualTimeStr) : null;
+
+                    updateTaskStatus(taskId, 'Completed', actualTime).then(() => {
                         window.location.reload();
                     });
                 }

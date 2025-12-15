@@ -14,6 +14,7 @@ import UserProfile from '../components/UserProfile';
 import WellnessDashboard from '../components/WellnessDashboard';
 import BackupManager from '../components/BackupManager';
 import DatabaseViewer from '../components/DatabaseViewer';
+import TaskCompletionModal from '../components/TaskCompletionModal';
 
 const Dashboard = ({ userId, onLogout }) => {
     const [tasks, setTasks] = useState([]);
@@ -28,6 +29,12 @@ const Dashboard = ({ userId, onLogout }) => {
     const [newTask, setNewTask] = useState({
         title: '', category: 'writing', estimated_size: 1, default_expected_time: 30, priority: 'Medium', deadline: '',
         complexity: 'Medium', num_pages: '', num_slides: '', num_questions: '', days_to_complete: ''
+    });
+    const [completionModal, setCompletionModal] = useState({
+        isOpen: false,
+        taskId: null,
+        taskTitle: '',
+        estimatedTime: 0
     });
 
     const loadData = async () => {
@@ -169,10 +176,10 @@ const Dashboard = ({ userId, onLogout }) => {
         }
     };
 
-    const handleCompleteTask = async (taskId) => {
+    const handleCompleteTask = async (taskId, actualTime = null) => {
         setLoading(true);
         try {
-            await updateTaskStatus(taskId, 'Completed');
+            await updateTaskStatus(taskId, 'Completed', actualTime);
             await loadData();
         } catch (err) {
             setError("Failed to complete task.");
@@ -736,6 +743,15 @@ const Dashboard = ({ userId, onLogout }) => {
                 {showDatabaseViewer && (
                     <DatabaseViewer onClose={() => setShowDatabaseViewer(false)} />
                 )}
+
+                {/* Task Completion Modal */}
+                <TaskCompletionModal
+                    isOpen={completionModal.isOpen}
+                    onClose={() => setCompletionModal({ ...completionModal, isOpen: false })}
+                    onSubmit={handleModalSubmit}
+                    taskTitle={completionModal.taskTitle}
+                    estimatedTime={completionModal.estimatedTime}
+                />
             </div>
         </div>
     );

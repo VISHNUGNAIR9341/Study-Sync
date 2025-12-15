@@ -32,8 +32,8 @@ export const createTask = async (task) => {
     return response.data;
 };
 
-export const updateTaskStatus = async (taskId, status) => {
-    const response = await axios.put(`${API_BASE}/tasks/${taskId}/status`, { status });
+export const updateTaskStatus = async (taskId, status, actualTime = null) => {
+    const response = await axios.put(`${API_BASE}/tasks/${taskId}/status`, { status, actual_time: actualTime });
     return response.data;
 };
 

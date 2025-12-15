@@ -70,4 +70,17 @@ async function generateSchedule(userId, routine, tasks, routine_blocks = [], com
     }
 }
 
-module.exports = { predictTime, generateSchedule };
+async function trainModel(userId, completedTasks) {
+    try {
+        const output = await runPythonScript('ml_trainer.py', {
+            user_id: userId,
+            completed_tasks: completedTasks
+        });
+        return output;
+    } catch (err) {
+        console.error('ML Training Error:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+module.exports = { predictTime, generateSchedule, trainModel };

@@ -21,6 +21,7 @@ const scheduleRoutes = require('./routes/schedule');
 const userRoutes = require('./routes/user');
 const databaseRoutes = require('./routes/database');
 const historyRoutes = require('./routes/history');
+const mlRoutes = require('./routes/ml');
 
 console.log('Registering user routes...');
 app.use('/api/user', userRoutes);
@@ -29,6 +30,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/database', databaseRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/ml', mlRoutes);
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Test route working' });
